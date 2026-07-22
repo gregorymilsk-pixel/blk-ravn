@@ -302,6 +302,21 @@
 
   /* chips */
   .chip-grid{display:flex;flex-wrap:wrap;gap:10px}
+
+  .filter-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+  .filter-row::-webkit-scrollbar{display:none}
+  .filter-chip{
+    flex:none;border:1px solid var(--line);border-radius:20px;padding:8px 14px;cursor:pointer;
+    font-family:var(--ui);font-weight:300;font-size:11px;letter-spacing:.04em;color:var(--bone-dim);
+    white-space:nowrap;transition:.2s;user-select:none;
+  }
+  .filter-chip:hover{border-color:var(--brass)}
+  .filter-chip.sel{border-color:var(--brass);background:rgba(196,164,107,.14);color:var(--brass-bright)}
+  .filter-select{
+    margin-top:10px;width:100%;padding:12px;border:1px solid var(--line);border-radius:4px;
+    background:var(--raven-card);color:var(--bone);font-family:var(--ui);font-size:12.5px;
+  }
+  .filter-select option{background:var(--raven-card);color:var(--bone)}
   .chip{
     border:1px solid var(--line);border-radius:40px;padding:11px 17px;cursor:pointer;
     font-family:var(--ui);font-weight:300;font-size:12.5px;letter-spacing:.04em;color:var(--bone);
@@ -743,12 +758,7 @@
               </button>
             </div>
             <div id="neighResults" style="display:none;margin-top:12px">
-              <div class="neigh-grid">
-                <div class="neigh" onclick="pickNeigh(this,'East Village')"><div class="n">East Village</div><div class="v">8 venues</div></div>
-                <div class="neigh" onclick="pickNeigh(this,'Little Italy')"><div class="n">Little Italy</div><div class="v">11 venues</div></div>
-                <div class="neigh" onclick="pickNeigh(this,'Gaslamp')"><div class="n">Gaslamp</div><div class="v">14 venues</div></div>
-                <div class="neigh" onclick="pickNeigh(this,'North Park')"><div class="n">North Park</div><div class="v">9 venues</div></div>
-              </div>
+              <div class="neigh-grid" id="neighGrid"></div>
             </div>
           </div>
         </div>
@@ -827,81 +837,21 @@
           </div>
 
           <div class="map">
-            <svg viewBox="0 0 360 172" preserveAspectRatio="xMidYMid slice">
+            <svg viewBox="0 0 360 172" preserveAspectRatio="xMidYMid slice" id="resMapSvg">
               <defs><pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="rgba(196,164,107,0.07)" stroke-width="1"/></pattern></defs>
               <rect width="360" height="172" fill="url(#grid)"/>
               <path d="M-10 120 L120 60 L250 96 L380 40" stroke="rgba(196,164,107,0.10)" stroke-width="8" fill="none"/>
               <path d="M40 -10 L80 90 L60 190" stroke="rgba(196,164,107,0.08)" stroke-width="6" fill="none"/>
-              <path d="M90 44 L196 92 L286 70" stroke="#C4A36B" stroke-width="1.3" stroke-dasharray="3 5" fill="none" opacity=".8"/>
-              <g>
-                <circle cx="90" cy="44" r="11" fill="#0A0908" stroke="#C4A36B"/><text x="90" y="48" font-family="Cormorant Garamond" font-size="13" fill="#E8D0A0" text-anchor="middle">1</text>
-                <circle cx="196" cy="92" r="11" fill="#0A0908" stroke="#C4A36B"/><text x="196" y="96" font-family="Cormorant Garamond" font-size="13" fill="#E8D0A0" text-anchor="middle">2</text>
-                <circle cx="286" cy="70" r="11" fill="#0A0908" stroke="#C4A36B"/><text x="286" y="74" font-family="Cormorant Garamond" font-size="13" fill="#E8D0A0" text-anchor="middle">3</text>
-              </g>
+              <g id="resMapDynamic"></g>
             </svg>
-            <div class="legend">Your route · 0.9 mi on foot</div>
+            <div class="legend" id="resLegend">Your route</div>
           </div>
 
           <div class="res-foot">
-            <div class="progress-note" id="progNote">Check off each stop as your moment unfolds — 0 of 3 complete.</div>
+            <div class="progress-note" id="progNote">Check off each stop as your moment unfolds.</div>
           </div>
 
-          <div class="timeline" id="timeline">
-            <div class="tl-item">
-              <div class="tl-line"></div>
-              <div class="tl-node"><span class="num">1</span><svg class="check" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="#1a140c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-              <div class="tl-card">
-                <button class="heart-btn" onclick="event.stopPropagation(); toggleCardHeart(this, 'Craft &amp; Commerce')">♡</button>
-                <div class="time">6:30 PM · Aperitivo</div>
-                <h4>Craft &amp; Commerce</h4>
-                <div class="type">Cocktail bar · Little Italy</div>
-                <div class="why">Your Old Fashioned bar to begin your moment.</div>
-                <button class="btn btn-fill" style="margin-top:14px;font-size:10px" onclick="confirmCheckin(this, 42)">Check in</button>
-                <div class="checkin-confirm" style="display:none;margin-top:12px;padding:14px;border:1px solid var(--brass);border-radius:3px;background:rgba(196,164,107,.08);text-align:center">
-                  <div style="font-family:var(--display);font-weight:500;font-size:15px;color:var(--brass);display:flex;align-items:center;justify-content:center;gap:8px">
-                    <span style="font-size:18px">✓</span> Checked in at <span data-venue>Craft &amp; Commerce</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-line"></div>
-              <div class="tl-node"><span class="num">2</span><svg class="check" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="#1a140c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-              <div class="tl-card">
-                <button class="heart-btn" onclick="event.stopPropagation(); toggleCardHeart(this, 'Born &amp; Raised')">♡</button>
-                <div class="time">8:00 PM · The table</div>
-                <h4>Born &amp; Raised</h4>
-                <div class="type">Steakhouse · Little Italy</div>
-                <div class="why">Premium steaks with martinis. Rooftop if it's clear.</div>
-                <button class="btn btn-fill" style="margin-top:14px;font-size:10px" onclick="confirmCheckin(this, 128)">Check in</button>
-                <div class="checkin-confirm" style="display:none;margin-top:12px;padding:14px;border:1px solid var(--brass);border-radius:3px;background:rgba(196,164,107,.08);text-align:center">
-                  <div style="font-family:var(--display);font-weight:500;font-size:15px;color:var(--brass);display:flex;align-items:center;justify-content:center;gap:8px">
-                    <span style="font-size:18px">✓</span> Checked in at <span data-venue>Born &amp; Raised</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-line"></div>
-              <div class="tl-node"><span class="num">3</span><svg class="check" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="#1a140c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-              <div class="tl-card">
-                <button class="heart-btn" onclick="event.stopPropagation(); toggleCardHeart(this, 'Noble Experiment')">♡</button>
-                <div class="time">10:30 PM · Nightcap</div>
-                <h4>Noble Experiment</h4>
-                <div class="type">Hidden bar · East Village</div>
-                <div class="why">The hidden speakeasy to close your night.</div>
-                <button class="btn btn-fill" style="margin-top:14px;font-size:10px" onclick="confirmCheckin(this, 36)">Check in</button>
-                <div class="checkin-confirm" style="display:none;margin-top:12px;padding:14px;border:1px solid var(--brass);border-radius:3px;background:rgba(196,164,107,.08);text-align:center">
-                  <div style="font-family:var(--display);font-weight:500;font-size:15px;color:var(--brass);display:flex;align-items:center;justify-content:center;gap:8px">
-                    <span style="font-size:18px">✓</span> Checked in at <span data-venue>Noble Experiment</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-            <button class="btn btn-ghost" style="margin-top:22px" onclick="startFlow()">Recompose the evening</button>
-          </div>
+          <div class="timeline" id="timeline"></div>
         </div>
         <div class="navbar" id="nav-results"></div>
       </section>
@@ -918,6 +868,7 @@
             <div class="venue-hero">
               <div class="eyebrow" id="venueType">Cocktail bar</div>
               <div class="display-l" id="venueName">Craft &amp; Commerce</div>
+              <div class="body-s" id="venueMeta" style="margin-top:8px;color:var(--brass);display:none"></div>
               <div class="body-s" style="margin-top:14px">Check in to build your status and unlock rewards as you climb the membership tiers.</div>
             </div>
 
@@ -961,6 +912,8 @@
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.1"/><path d="M12 12l6 6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
               </button>
             </div>
+            <div class="filter-row" id="typeFilterRow" style="margin-top:14px"></div>
+            <select class="filter-select" id="neighFilterSelect" onchange="setExploreNeighborhood(this.value)"></select>
           </div>
 
           <!-- SAVED VENUES -->
@@ -1250,111 +1203,111 @@
 
 <script>
   /* ---------- state ---------- */
-  const state={ neighborhood:'East Village', food:new Set(['Steakhouse']), drinks:new Set(['Old Fashioned']), pace:'3 stops', savedVenues:[] };
+  const state={ neighborhood:null, food:new Set(['steak']), drinks:new Set(['old_fashioned']), pace:3, savedVenues:[], exploreType:'All', exploreNeighborhood:'All' };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
-  {name:'Bay City Brewing Co Tasting Room',type:'Brewery',neighborhood:'Downtown',lat:32.7120193,lon:-117.1572392,hours:['3:00 PM - 9:00 PM','3:00 PM - 9:00 PM','12:00 PM - 9:00 PM','12:00 PM - 9:00 PM','12:00 PM - 11:00 PM','12:00 PM - 11:00 PM','12:00 PM - 6:00 PM']},
-  {name:'Callie',type:'Fine Dining',neighborhood:'Downtown',lat:32.7164,lon:-117.1611,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Animae',type:'Fine Dining',neighborhood:'Downtown',lat:32.715123784527044,lon:-117.17051428447297,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','Closed']},
-  {name:'Juniper & Ivy',type:'Fine Dining',neighborhood:'Downtown',lat:32.7241,lon:-117.1690,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Herb & Wood',type:'Fine Dining',neighborhood:'Downtown',lat:32.7270,lon:-117.1719,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Kingfisher',type:'Fine Dining',neighborhood:'North Park',lat:32.7422,lon:-117.1296,hours:['Closed','Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Cowboy Star',type:'Fine Dining',neighborhood:'Downtown',lat:32.7145,lon:-117.1542,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','Closed']},
-  {name:'Born & Raised',type:'Fine Dining',neighborhood:'Downtown',lat:32.7278,lon:-117.1708,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM']},
-  {name:'Mister A\'s',type:'Fine Dining',neighborhood:'Bankers Hill',lat:32.7324,lon:-117.1577,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Addison',type:'Fine Dining',neighborhood:'Del Mar',lat:32.9810,lon:-117.2706,hours:['Closed','Closed','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM']},
-  {name:'Jeune et Jolie',type:'Fine Dining',neighborhood:'La Jolla',lat:33.1625,lon:-117.3506,hours:['Closed','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM']},
-  {name:'Valle',type:'Fine Dining',neighborhood:'East County',lat:32.9364,lon:-116.8690,hours:['5:00 PM - 10:00 PM','Closed','Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'The Marine Room',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8509,lon:-117.2733,hours:['4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM']},
-  {name:'A.R. Valentien',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8498,lon:-117.2523,hours:['5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM']},
-  {name:'Nine-Ten',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8426,lon:-117.2744,hours:['7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM']},
-  {name:'Georges at the Cove',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8473,lon:-117.2735,hours:['11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM']},
-  {name:'Serẽa',type:'Fine Dining',neighborhood:'Downtown',lat:32.7113,lon:-117.1661,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Stake Chophouse',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8487,lon:-117.2732,hours:['4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM']},
-  {name:'Luca',type:'Fine Dining',neighborhood:'Del Mar',lat:32.9856,lon:-117.2700,hours:['Closed','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM']},
-  {name:'Cucina Urbana',type:'Fine Dining',neighborhood:'Downtown',lat:32.7294,lon:-117.1552,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Fort Oak',type:'Fine Dining',neighborhood:'North Park',lat:32.7481,lon:-117.1290,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Lola 55',type:'Casual Dining',neighborhood:'Downtown',lat:32.7437,lon:-117.1669,hours:['11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM']},
-  {name:'Cesarina',type:'Casual Dining',neighborhood:'North Park',lat:32.7483,lon:-117.1436,hours:['5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM']},
-  {name:'El Pescador',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8420,lon:-117.2731,hours:['11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM']},
-  {name:'The Taco Stand',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8472,lon:-117.2734,hours:['10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM']},
-  {name:'Trust',type:'Casual Dining',neighborhood:'North Park',lat:32.7488,lon:-117.1293,hours:['Closed','Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'Buona Forchetta',type:'Casual Dining',neighborhood:'North Park',lat:32.7426,lon:-117.1292,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Tribute Pizza',type:'Casual Dining',neighborhood:'North Park',lat:32.7491,lon:-117.1298,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Crack Shack',type:'Casual Dining',neighborhood:'Downtown',lat:32.7304,lon:-117.1706,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'The Friendly',type:'Casual Dining',neighborhood:'North Park',lat:32.7486,lon:-117.1296,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Ironside Fish & Oyster',type:'Casual Dining',neighborhood:'Downtown',lat:32.7225,lon:-117.1698,hours:['11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM']},
-  {name:'Mitch\'s Seafood',type:'Casual Dining',neighborhood:'Downtown',lat:32.7229,lon:-117.1733,hours:['11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM']},
-  {name:'Blue Water Seafood',type:'Casual Dining',neighborhood:'Downtown',lat:32.7226,lon:-117.1752,hours:['11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM']},
-  {name:'The Henry',type:'Casual Dining',neighborhood:'Downtown',lat:32.7076,lon:-117.1606,hours:['7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM']},
-  {name:'Little Frenchie',type:'Casual Dining',neighborhood:'South Bay',lat:32.6809,lon:-117.1783,hours:['8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM']},
-  {name:'Liberty Public Market',type:'Casual Dining',neighborhood:'Downtown',lat:32.7414,lon:-117.2156,hours:['11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM']},
-  {name:'The Cottage',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8383,lon:-117.2810,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM']},
-  {name:'Sugar and Scribe',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8389,lon:-117.2719,hours:['7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM']},
-  {name:'Morning Glory',type:'Casual Dining',neighborhood:'North Park',lat:32.7500,lon:-117.1299,hours:['8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM']},
-  {name:'Wayfarer Bread',type:'Casual Dining',neighborhood:'Pacific Beach',lat:32.8006,lon:-117.2541,hours:['Closed','Closed','Closed','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM']},
-  {name:'Marisi',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8406,lon:-117.2729,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM']},
-  {name:'False Idol',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7242,lon:-117.1692,hours:['Closed','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','Closed']},
-  {name:'Noble Experiment',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7169,lon:-117.1614,hours:['Closed','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','Closed']},
-  {name:'Young Blood',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7493,lon:-117.1297,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM']},
-  {name:'Raised by Wolves',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7158,lon:-117.1610,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM']},
-  {name:'Polite Provisions',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7478,lon:-117.1300,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM']},
-  {name:'Realm of the 52 Remedies',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7484,lon:-117.1296,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM']},
-  {name:'Mothership',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7489,lon:-117.1295,hours:['5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM']},
-  {name:'Part Time Lover',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7481,lon:-117.1294,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM']},
-  {name:'Kindred',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7467,lon:-117.1291,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM']},
-  {name:'Madison',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7459,lon:-117.1298,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM']},
-  {name:'Born & Raised Rooftop',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7278,lon:-117.1708,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM']},
-  {name:'Seneca Rooftop',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7154,lon:-117.1702,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM']},
-  {name:'ALTITUDE Sky Lounge',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7156,lon:-117.1649,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM']},
-  {name:'Nolen',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7069,lon:-117.1612,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM']},
-  {name:'Craft & Commerce',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7482,lon:-117.1292,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM']},
-  {name:'Panama 66',type:'Cocktail Bar',neighborhood:'Midtown',lat:32.7319,lon:-117.1462,hours:['11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM']},
-  {name:'Kettner Exchange',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7259,lon:-117.1706,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM']},
-  {name:'Wormwood',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7490,lon:-117.1299,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM']},
-  {name:'The Grass Skirt',type:'Cocktail Bar',neighborhood:'La Jolla',lat:32.8372,lon:-117.2725,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM']},
-  {name:'Vin de Syrah',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7117,lon:-117.1609,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM']},
-  {name:'Bird Rock Coffee Roasters',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8165,lon:-117.2727,hours:['6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM']},
-  {name:'Goldchild Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7492,lon:-117.1296,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM']},
-  {name:'James Coffee Co.',type:'Coffee Shop',neighborhood:'Downtown',lat:32.7449,lon:-117.1746,hours:['7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM']},
-  {name:'Jaunt Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7541,lon:-117.1302,hours:['7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM']},
-  {name:'Flor & Seed',type:'Coffee Shop',neighborhood:'North Park',lat:32.7487,lon:-117.1293,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM']},
-  {name:'Mostra Coffee',type:'Coffee Shop',neighborhood:'Clairemont',lat:32.9591,lon:-117.2646,hours:['6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM']},
-  {name:'Provecho Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7479,lon:-117.1301,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM']},
-  {name:'Dark Horse Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7485,lon:-117.1298,hours:['6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM']},
-  {name:'Zumbar',type:'Coffee Shop',neighborhood:'Pacific Beach',lat:32.8076,lon:-117.2163,hours:['6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM']},
-  {name:'Brick & Bell',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8419,lon:-117.2738,hours:['6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM']},
-  {name:'Better Buzz',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8354,lon:-117.2721,hours:['6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM']},
-  {name:'Communal Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7494,lon:-117.1295,hours:['7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM']},
-  {name:'Parakeet Cafe',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8387,lon:-117.2716,hours:['7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM']},
-  {name:'Lofty Coffee',type:'Coffee Shop',neighborhood:'Rancho Santa Fe',lat:33.0198,lon:-117.2824,hours:['6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM']},
-  {name:'Cafe Moto',type:'Coffee Shop',neighborhood:'Downtown',lat:32.7073,lon:-117.1236,hours:['6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM']},
-  {name:'Hawthorn Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7438,lon:-117.1297,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM']},
-  {name:'Portal Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7483,lon:-117.1292,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM']},
-  {name:'Scrimshaw Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7486,lon:-117.1294,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM']},
-  {name:'Achilles Coffee',type:'Coffee Shop',neighborhood:'Downtown',lat:32.7124,lon:-117.1613,hours:['6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM']},
-  {name:'Moniker Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7466,lon:-117.1290,hours:['7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM']},
-  {name:'Vino Carta',type:'Wine Bar',neighborhood:'La Jolla',lat:32.8408,lon:-117.2731,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'Carruth Cellars',type:'Wine Bar',neighborhood:'Ocean Beach',lat:32.7468,lon:-117.2506,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'M Winehouse',type:'Wine Bar',neighborhood:'La Jolla',lat:32.8359,lon:-117.2714,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'Pali Wine Co.',type:'Wine Bar',neighborhood:'North Park',lat:32.7459,lon:-117.1306,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'Clos Wine Shop',type:'Wine Bar',neighborhood:'North Park',lat:32.7481,lon:-117.1299,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'The Wine Pub',type:'Wine Bar',neighborhood:'Downtown',lat:32.7422,lon:-117.2151,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'LJ Crafted Wines',type:'Wine Bar',neighborhood:'La Jolla',lat:32.8402,lon:-117.2728,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'Village Vino',type:'Wine Bar',neighborhood:'North Park',lat:32.7446,lon:-117.1294,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'Bottlecraft Little Italy',type:'Wine Bar',neighborhood:'Downtown',lat:32.7227,lon:-117.1689,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'Bottlecraft North Park',type:'Wine Bar',neighborhood:'North Park',lat:32.7489,lon:-117.1291,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM']},
-  {name:'Pure Project',type:'Brewery',neighborhood:'North Park',lat:32.7439,lon:-117.1295,hours:['3:00 PM - 9:00 PM','3:00 PM - 9:00 PM','1:00 PM - 9:00 PM','1:00 PM - 10:00 PM','1:00 PM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 9:00 PM']},
-  {name:'North Park Beer Co.',type:'Brewery',neighborhood:'North Park',lat:32.7488,lon:-117.1296,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 11:00 PM','12:00 PM - 12:00 AM','12:00 PM - 12:00 AM','12:00 PM - 10:00 PM']},
-  {name:'Modern Times',type:'Brewery',neighborhood:'North Park',lat:32.7482,lon:-117.1293,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'AleSmith',type:'Brewery',neighborhood:'Miramar',lat:32.8267,lon:-117.1553,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Ballast Point',type:'Brewery',neighborhood:'Little Italy',lat:32.7413,lon:-117.2159,hours:['11:00 AM - 9:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 11:00 PM','11:00 AM - 11:00 PM','11:00 AM - 9:00 PM']},
-  {name:'Harland Brewing',type:'Brewery',neighborhood:'North Park',lat:32.7490,lon:-117.1297,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Burgeon Beer',type:'Brewery',neighborhood:'Encinitas',lat:33.1204,lon:-117.2658,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Societe Brewing',type:'Brewery',neighborhood:'Miramar',lat:32.8206,lon:-117.1557,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Pizza Port',type:'Brewery',neighborhood:'Carlsbad',lat:33.1816,lon:-117.3310,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']},
-  {name:'Coronado Brewing',type:'Brewery',neighborhood:'Coronado',lat:32.6899,lon:-117.1784,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM']}
+  {name:'Bay City Brewing Co Tasting Room',type:'Brewery',neighborhood:'Downtown',lat:32.7120193,lon:-117.1572392,hours:['3:00 PM - 9:00 PM','3:00 PM - 9:00 PM','12:00 PM - 9:00 PM','12:00 PM - 9:00 PM','12:00 PM - 11:00 PM','12:00 PM - 11:00 PM','12:00 PM - 6:00 PM'],food:[],drink:['beer','ipa'],ambiance:['lively'],bestFor:['happy_hour','guys_night'],price:'$$',dress:'Casual'},
+  {name:'Callie',type:'Fine Dining',neighborhood:'Downtown',lat:32.7164,lon:-117.1611,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['romantic','luxury','patio'],bestFor:['date_night','celebration'],price:'$$$',dress:'Smart Casual'},
+  {name:'Animae',type:'Fine Dining',neighborhood:'Downtown',lat:32.715123784527044,lon:-117.17051428447297,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','Closed'],food:['wagyu','sushi','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['lively','luxury'],bestFor:['date_night','business_dinner','client_meeting'],price:'$$$$',dress:'Smart Casual'},
+  {name:'Juniper & Ivy',type:'Fine Dining',neighborhood:'Downtown',lat:32.7241,lon:-117.1690,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','pasta','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['lively','trendy'],bestFor:['date_night'],price:'$$$$',dress:'Casual (upscale casual in practice)'},
+  {name:'Herb & Wood',type:'Fine Dining',neighborhood:'Downtown',lat:32.7270,lon:-117.1719,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','pasta','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['romantic','trendy'],bestFor:['date_night'],price:'$$$$',dress:'Casual Dressy'},
+  {name:'Kingfisher',type:'Fine Dining',neighborhood:'North Park',lat:32.7422,lon:-117.1296,hours:['Closed','Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['seafood','pho','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['romantic'],bestFor:['date_night'],price:'$$$',dress:'Smart Casual'},
+  {name:'Cowboy Star',type:'Fine Dining',neighborhood:'Downtown',lat:32.7145,lon:-117.1542,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','Closed'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['quiet'],bestFor:['business_dinner'],price:'$$$',dress:'Smart Casual'},
+  {name:'Born & Raised',type:'Fine Dining',neighborhood:'Downtown',lat:32.7278,lon:-117.1708,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['lively','luxury'],bestFor:['celebration'],price:'$$$$',dress:'Business Casual (no shorts/t-shirts/flip-flops)'},
+  {name:'Mister A\'s',type:'Fine Dining',neighborhood:'Bankers Hill',lat:32.7324,lon:-117.1577,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['romantic'],bestFor:['anniversary'],price:'$$$$',dress:'Business Casual — strictly enforced (no t-shirts/hoodies/shorts/flip-flops)'},
+  {name:'Addison',type:'Fine Dining',neighborhood:'Del Mar',lat:32.9810,lon:-117.2706,hours:['Closed','Closed','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['quiet','luxury'],bestFor:[],price:'$$$$ ($395pp tasting)',dress:'No formal code; jacket preferred not required'},
+  {name:'Jeune et Jolie',type:'Fine Dining',neighborhood:'La Jolla',lat:33.1625,lon:-117.3506,hours:['Closed','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM'],food:['seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Casual / Smart Casual'},
+  {name:'Valle',type:'Fine Dining',neighborhood:'East County',lat:32.9364,lon:-116.8690,hours:['5:00 PM - 10:00 PM','Closed','Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$',dress:'Resort Casual / no dress code'},
+  {name:'The Marine Room',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8509,lon:-117.2733,hours:['4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM','4:30 PM - 9:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$',dress:'Business California Casual (no beachwear/shorts/flip-flops)'},
+  {name:'A.R. Valentien',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8498,lon:-117.2523,hours:['5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM','5:00 PM - 9:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$',dress:'Dressy for dinner / Smart Casual'},
+  {name:'Nine-Ten',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8426,lon:-117.2744,hours:['7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM','7:00 AM - 9:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$-$$$$',dress:'Casual Dressy / Smart Casual'},
+  {name:'Georges at the Cove',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8473,lon:-117.2735,hours:['11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM','11:30 AM - 9:00 PM'],food:['pasta','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$',dress:'Business Casual / Smart Casual'},
+  {name:'Serẽa',type:'Fine Dining',neighborhood:'Downtown',lat:32.7113,lon:-117.1661,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','wagyu','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$-$$$$',dress:'Smart Casual'},
+  {name:'Stake Chophouse',type:'Fine Dining',neighborhood:'La Jolla',lat:32.8487,lon:-117.2732,hours:['4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM','4:00 PM - 10:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$',dress:'Business Casual'},
+  {name:'Luca',type:'Fine Dining',neighborhood:'Del Mar',lat:32.9856,lon:-117.2700,hours:['Closed','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM'],food:['pasta'],drink:['wine','cocktails'],ambiance:['romantic'],bestFor:['date_night'],price:'$$$',dress:'Casual'},
+  {name:'Cucina Urbana',type:'Fine Dining',neighborhood:'Downtown',lat:32.7294,lon:-117.1552,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','pasta','pizza','seafood','vegetarian'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Casual / Casual Elegant'},
+  {name:'Fort Oak',type:'Fine Dining',neighborhood:'North Park',lat:32.7481,lon:-117.1290,hours:['5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','seafood','vegetarian','gluten_free'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual'},
+  {name:'Lola 55',type:'Casual Dining',neighborhood:'Downtown',lat:32.7437,lon:-117.1669,hours:['11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM'],food:['steak','seafood','tacos','vegetarian','gluten_free'],drink:['cocktails','margarita','wine','beer','mocktails'],ambiance:['lively'],bestFor:[],price:'$',dress:'Casual'},
+  {name:'Cesarina',type:'Casual Dining',neighborhood:'North Park',lat:32.7483,lon:-117.1436,hours:['5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM','5:00 PM - 9:30 PM'],food:['pasta','vegetarian'],drink:['beer'],ambiance:['romantic','cozy'],bestFor:['date_night'],price:'$$',dress:'Smart Casual'},
+  {name:'El Pescador',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8420,lon:-117.2731,hours:['11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM'],food:['seafood','tacos'],drink:['beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'The Taco Stand',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8472,lon:-117.2734,hours:['10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM','10:00 AM - 11:00 PM'],food:['tacos','vegetarian'],drink:['cocktails','margarita','wine','beer','mocktails'],ambiance:[],bestFor:[],price:'$',dress:'Casual'},
+  {name:'Trust',type:'Casual Dining',neighborhood:'North Park',lat:32.7488,lon:-117.1293,hours:['Closed','Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','seafood','vegetarian'],drink:['espresso','tea','cocktails','wine','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Smart Casual'},
+  {name:'Buona Forchetta',type:'Casual Dining',neighborhood:'North Park',lat:32.7426,lon:-117.1292,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['pasta','pizza','vegetarian'],drink:['espresso','tea','cocktails','wine','beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'Tribute Pizza',type:'Casual Dining',neighborhood:'North Park',lat:32.7491,lon:-117.1298,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['pizza','vegetarian'],drink:['espresso','tea','cocktails','wine','beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'Crack Shack',type:'Casual Dining',neighborhood:'Downtown',lat:32.7304,lon:-117.1706,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['tacos','burgers'],drink:['beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'The Friendly',type:'Casual Dining',neighborhood:'North Park',lat:32.7486,lon:-117.1296,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['burgers'],drink:['beer'],ambiance:[],bestFor:[],price:'$',dress:'Casual'},
+  {name:'Ironside Fish & Oyster',type:'Casual Dining',neighborhood:'Downtown',lat:32.7225,lon:-117.1698,hours:['11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM'],food:['seafood','oysters','vegetarian'],drink:['cocktails','wine','beer'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual'},
+  {name:'Mitch\'s Seafood',type:'Casual Dining',neighborhood:'Downtown',lat:32.7229,lon:-117.1733,hours:['11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM','11:00 AM - 9:00 PM'],food:['seafood','tacos'],drink:['beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'Blue Water Seafood',type:'Casual Dining',neighborhood:'Downtown',lat:32.7226,lon:-117.1752,hours:['11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM','11:00 AM - 8:30 PM'],food:['seafood','oysters','tacos','vegetarian'],drink:['beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'The Henry',type:'Casual Dining',neighborhood:'Downtown',lat:32.7076,lon:-117.1606,hours:['7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM','7:00 AM - 10:00 PM'],food:['steak','sushi','seafood','burgers','vegetarian','gluten_free'],drink:['espresso','tea','cocktails','margarita','wine','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Business/Smart Casual'},
+  {name:'Little Frenchie',type:'Casual Dining',neighborhood:'South Bay',lat:32.6809,lon:-117.1783,hours:['8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM','8:00 AM - 9:00 PM'],food:['steak','seafood','vegetarian'],drink:['cocktails','wine','beer'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Casual'},
+  {name:'Liberty Public Market',type:'Casual Dining',neighborhood:'Downtown',lat:32.7414,lon:-117.2156,hours:['11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM','11:00 AM - 8:00 PM'],food:['pizza','seafood','tacos','burgers','dessert','vegan','vegetarian'],drink:['beer'],ambiance:[],bestFor:[],price:'$-$$',dress:'Casual'},
+  {name:'The Cottage',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8383,lon:-117.2810,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM'],food:['steak','seafood','burgers','vegetarian'],drink:['cocktails','wine','beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'Sugar and Scribe',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8389,lon:-117.2719,hours:['7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM'],food:['steak','seafood','dessert','vegetarian'],drink:['beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'Morning Glory',type:'Casual Dining',neighborhood:'North Park',lat:32.7500,lon:-117.1299,hours:['8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM'],food:['dessert','vegetarian'],drink:['espresso','tea','cocktails','margarita','wine','beer','mocktails'],ambiance:['lively','instagrammable'],bestFor:['brunch'],price:'$$',dress:'Casual/Trendy'},
+  {name:'Wayfarer Bread',type:'Casual Dining',neighborhood:'Pacific Beach',lat:32.8006,lon:-117.2541,hours:['Closed','Closed','Closed','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM','8:00 AM - 2:00 PM'],food:['dessert','vegetarian'],drink:['beer'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'Marisi',type:'Casual Dining',neighborhood:'La Jolla',lat:32.8406,lon:-117.2729,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','pasta','seafood','vegetarian'],drink:['espresso','tea','cocktails','margarita','wine','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$-$$$$',dress:'Cocktail attire; jeans OK, no shorts/beachwear/gym attire/caps/flip-flops'},
+  {name:'False Idol',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7242,lon:-117.1692,hours:['Closed','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','Closed'],food:[],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual'},
+  {name:'Noble Experiment',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7169,lon:-117.1614,hours:['Closed','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','6:00 PM - 12:00 AM','Closed'],food:[],drink:['cocktails','old_fashioned','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Dressy/Smart'},
+  {name:'Young Blood',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7493,lon:-117.1297,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$ ($65pp prix fixe)',dress:'Dressy ("come dressed for it")'},
+  {name:'Raised by Wolves',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7158,lon:-117.1610,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual'},
+  {name:'Polite Provisions',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7478,lon:-117.1300,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$',dress:'Casual/Business Casual'},
+  {name:'Realm of the 52 Remedies',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7484,lon:-117.1296,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual'},
+  {name:'Mothership',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7489,lon:-117.1295,hours:['5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM','5:00 PM - 2:00 AM'],food:[],drink:['cocktails','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Casual'},
+  {name:'Part Time Lover',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7481,lon:-117.1294,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Casual/Smart'},
+  {name:'Kindred',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7467,lon:-117.1291,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Casual (edgy/goth vibe)'},
+  {name:'Madison',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7459,lon:-117.1298,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Casual/Smart Casual'},
+  {name:'Born & Raised Rooftop',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7278,lon:-117.1708,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM'],food:[],drink:['cocktails','old_fashioned','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$',dress:'Dressy/Smart-Elegant'},
+  {name:'Seneca Rooftop',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7154,lon:-117.1702,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM'],food:[],drink:['cocktails','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$$',dress:'Smart Casual'},
+  {name:'ALTITUDE Sky Lounge',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7156,lon:-117.1649,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM'],food:[],drink:['cocktails','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual (casual on Padres match days)'},
+  {name:'Nolen',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7069,lon:-117.1612,hours:['4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM','4:00 PM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual (no strict code)'},
+  {name:'Craft & Commerce',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7482,lon:-117.1292,hours:['11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM','11:00 AM - 12:00 AM'],food:['burgers','vegetarian'],drink:['cocktails','espresso_martini','old_fashioned','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$',dress:'Casual'},
+  {name:'Panama 66',type:'Cocktail Bar',neighborhood:'Midtown',lat:32.7319,lon:-117.1462,hours:['11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM','11:30 AM - 10:00 PM'],food:['burgers','vegetarian'],drink:['cocktails','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$-$$',dress:'Casual'},
+  {name:'Kettner Exchange',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7259,lon:-117.1706,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM'],food:['steak','seafood','vegetarian'],drink:['cocktails','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Smart Casual'},
+  {name:'Wormwood',type:'Cocktail Bar',neighborhood:'North Park',lat:32.7490,lon:-117.1299,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM'],food:[],drink:['cocktails','espresso_martini','old_fashioned','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$$',dress:'Business Casual / Smart Casual'},
+  {name:'The Grass Skirt',type:'Cocktail Bar',neighborhood:'La Jolla',lat:32.8372,lon:-117.2725,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM'],food:['seafood','tacos','vegetarian'],drink:['cocktails','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Casual (tiki)'},
+  {name:'Vin de Syrah',type:'Cocktail Bar',neighborhood:'Downtown',lat:32.7117,lon:-117.1609,hours:['5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM','5:00 PM - 12:00 AM'],food:['vegetarian'],drink:['cocktails','espresso_martini','old_fashioned','margarita','martini','wine','bourbon','whiskey','tequila','gin','rum','beer','mocktails'],ambiance:[],bestFor:[],price:'$$-$$$',dress:'Business Casual'},
+  {name:'Bird Rock Coffee Roasters',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8165,lon:-117.2727,hours:['6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Goldchild Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7492,lon:-117.1296,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'James Coffee Co.',type:'Coffee Shop',neighborhood:'Downtown',lat:32.7449,lon:-117.1746,hours:['7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Jaunt Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7541,lon:-117.1302,hours:['7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM','7:00 AM - 2:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$',dress:'N/A'},
+  {name:'Flor & Seed',type:'Coffee Shop',neighborhood:'North Park',lat:32.7487,lon:-117.1293,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Mostra Coffee',type:'Coffee Shop',neighborhood:'Clairemont',lat:32.9591,lon:-117.2646,hours:['6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM','6:00 AM - 5:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$-$$',dress:'N/A'},
+  {name:'Provecho Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7479,lon:-117.1301,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Dark Horse Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7485,lon:-117.1298,hours:['6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$',dress:'N/A'},
+  {name:'Zumbar',type:'Coffee Shop',neighborhood:'Pacific Beach',lat:32.8076,lon:-117.2163,hours:['6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Brick & Bell',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8419,lon:-117.2738,hours:['6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM','6:00 AM - 4:00 PM'],food:[],drink:['coffee','espresso','latte','tea'],ambiance:[],bestFor:[],price:'$',dress:'N/A'},
+  {name:'Better Buzz',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8354,lon:-117.2721,hours:['6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM','6:00 AM - 7:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$-$$',dress:'N/A'},
+  {name:'Communal Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7494,lon:-117.1295,hours:['7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Parakeet Cafe',type:'Coffee Shop',neighborhood:'La Jolla',lat:32.8387,lon:-117.2716,hours:['7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM','7:00 AM - 5:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A (casual)'},
+  {name:'Lofty Coffee',type:'Coffee Shop',neighborhood:'Rancho Santa Fe',lat:33.0198,lon:-117.2824,hours:['6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM','6:30 AM - 5:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Cafe Moto',type:'Coffee Shop',neighborhood:'Downtown',lat:32.7073,lon:-117.1236,hours:['6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM','6:00 AM - 3:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$-$$',dress:'N/A'},
+  {name:'Hawthorn Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7438,lon:-117.1297,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$',dress:'N/A'},
+  {name:'Portal Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7483,lon:-117.1292,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$ (est.)',dress:'N/A'},
+  {name:'Scrimshaw Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7486,lon:-117.1294,hours:['7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM','7:00 AM - 3:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$',dress:'N/A'},
+  {name:'Achilles Coffee',type:'Coffee Shop',neighborhood:'Downtown',lat:32.7124,lon:-117.1613,hours:['6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM','6:30 AM - 4:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Moniker Coffee',type:'Coffee Shop',neighborhood:'North Park',lat:32.7466,lon:-117.1290,hours:['7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM','7:00 AM - 4:00 PM'],food:[],drink:['coffee','espresso','latte','matcha','tea'],ambiance:[],bestFor:[],price:'$$',dress:'N/A'},
+  {name:'Vino Carta',type:'Wine Bar',neighborhood:'La Jolla',lat:32.8408,lon:-117.2731,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['wine','champagne','beer'],ambiance:[],bestFor:[],price:'$$',dress:'N/A (casual)'},
+  {name:'Carruth Cellars',type:'Wine Bar',neighborhood:'Ocean Beach',lat:32.7468,lon:-117.2506,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['wine','champagne','beer'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'M Winehouse',type:'Wine Bar',neighborhood:'La Jolla',lat:32.8359,lon:-117.2714,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['cocktails','wine','champagne','beer','mocktails'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Pali Wine Co.',type:'Wine Bar',neighborhood:'North Park',lat:32.7459,lon:-117.1306,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['cocktails','wine','champagne','beer'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Clos Wine Shop',type:'Wine Bar',neighborhood:'North Park',lat:32.7481,lon:-117.1299,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['wine','champagne'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'The Wine Pub',type:'Wine Bar',neighborhood:'Downtown',lat:32.7422,lon:-117.2151,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['cocktails','wine','champagne','beer'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'LJ Crafted Wines',type:'Wine Bar',neighborhood:'La Jolla',lat:32.8402,lon:-117.2728,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['wine','champagne'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Village Vino',type:'Wine Bar',neighborhood:'North Park',lat:32.7446,lon:-117.1294,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:[],drink:['wine','champagne','beer'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Bottlecraft Little Italy',type:'Wine Bar',neighborhood:'Downtown',lat:32.7227,lon:-117.1689,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:['pizza','burgers','vegetarian'],drink:['wine','champagne','beer'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Bottlecraft North Park',type:'Wine Bar',neighborhood:'North Park',lat:32.7489,lon:-117.1291,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM'],food:['pizza','burgers','vegetarian'],drink:['wine','champagne','beer'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Pure Project',type:'Brewery',neighborhood:'North Park',lat:32.7439,lon:-117.1295,hours:['3:00 PM - 9:00 PM','3:00 PM - 9:00 PM','1:00 PM - 9:00 PM','1:00 PM - 10:00 PM','1:00 PM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 9:00 PM'],food:['vegetarian'],drink:['beer','ipa','mocktails'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'North Park Beer Co.',type:'Brewery',neighborhood:'North Park',lat:32.7488,lon:-117.1296,hours:['12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 10:00 PM','12:00 PM - 11:00 PM','12:00 PM - 12:00 AM','12:00 PM - 12:00 AM','12:00 PM - 10:00 PM'],food:['vegetarian'],drink:['beer','ipa'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Modern Times',type:'Brewery',neighborhood:'North Park',lat:32.7482,lon:-117.1293,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['vegetarian'],drink:['wine','beer','ipa','mocktails'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'AleSmith',type:'Brewery',neighborhood:'Miramar',lat:32.8267,lon:-117.1553,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['vegetarian'],drink:['beer','ipa'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Ballast Point',type:'Brewery',neighborhood:'Little Italy',lat:32.7413,lon:-117.2159,hours:['11:00 AM - 9:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 11:00 PM','11:00 AM - 11:00 PM','11:00 AM - 9:00 PM'],food:['seafood','burgers','vegetarian'],drink:['wine','beer','ipa','mocktails'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Harland Brewing',type:'Brewery',neighborhood:'North Park',lat:32.7490,lon:-117.1297,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['pizza','burgers','vegetarian'],drink:['wine','beer','ipa','mocktails'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Burgeon Beer',type:'Brewery',neighborhood:'Encinitas',lat:33.1204,lon:-117.2658,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['vegetarian'],drink:['wine','beer','ipa'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Societe Brewing',type:'Brewery',neighborhood:'Miramar',lat:32.8206,lon:-117.1557,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['vegetarian'],drink:['beer','ipa'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Pizza Port',type:'Brewery',neighborhood:'Carlsbad',lat:33.1816,lon:-117.3310,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['pizza','vegetarian'],drink:['wine','beer','ipa'],ambiance:[],bestFor:[],price:'',dress:''},
+  {name:'Coronado Brewing',type:'Brewery',neighborhood:'Coronado',lat:32.6899,lon:-117.1784,hours:['11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM','11:00 AM - 10:00 PM'],food:['pizza','burgers','vegetarian'],drink:['wine','beer','ipa'],ambiance:[],bestFor:[],price:'',dress:''}
   ];
 
   /* distance in miles between two lat/lon points */
@@ -1435,23 +1388,120 @@
            `<path d="M44 23 L62 55 L26 55 Z" stroke="${c}" stroke-width="${w}" fill="none"/>`;
   }
 
-  const FOODS=['Steakhouse','Sushi','Italian','Coastal / Seafood','Small Plates','Mexican','Omakase','Late-night Bites'];
-  const DRINKS=['Old Fashioned','Espresso Martini','Margarita','Natural Wine','Mezcal','Champagne','Negroni','Zero-proof'];
+  /* tag keys match the food_/drink_ boolean columns in the venue master data */
+  const FOODS=[
+    {key:'steak',label:'Steak'},{key:'seafood',label:'Seafood'},{key:'sushi',label:'Sushi'},
+    {key:'wagyu',label:'Wagyu'},{key:'pasta',label:'Pasta'},{key:'pizza',label:'Pizza'},
+    {key:'tacos',label:'Tacos'},{key:'burgers',label:'Burgers'},{key:'oysters',label:'Oysters'},
+    {key:'dessert',label:'Dessert'},{key:'vegetarian',label:'Vegetarian'},{key:'gluten_free',label:'Gluten-Free'}
+  ];
+  const DRINKS=[
+    {key:'cocktails',label:'Cocktails'},{key:'old_fashioned',label:'Old Fashioned'},
+    {key:'espresso_martini',label:'Espresso Martini'},{key:'margarita',label:'Margarita'},
+    {key:'martini',label:'Martini'},{key:'wine',label:'Wine'},{key:'champagne',label:'Champagne'},
+    {key:'beer',label:'Beer'},{key:'ipa',label:'IPA'},{key:'coffee',label:'Coffee'},{key:'mocktails',label:'Zero-Proof'}
+  ];
+  const TAG_LABELS={};
+  FOODS.concat(DRINKS).forEach(t=>TAG_LABELS[t.key]=t.label);
+
+  /* escaping helpers — venue names like "Mister A's" contain characters that
+     break unescaped HTML text or single-quoted inline-JS attribute strings */
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escJsStr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+  /* price tier ($/$$/$$$/$$$$) + dress code, formatted for display */
+  function priceTier(venue){
+    if(!venue || !venue.price) return '';
+    const m = venue.price.match(/^\$+(-\$+)?/);
+    return m ? m[0] : '';
+  }
+  function priceDressLabel(venue){
+    if(!venue) return '';
+    const parts=[];
+    if(priceTier(venue)) parts.push(priceTier(venue));
+    if(venue.dress) parts.push(venue.dress);
+    return parts.join(' · ');
+  }
 
   const tick='<svg class="tick" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   function buildChips(id,arr,set){
     const el=document.getElementById(id); el.innerHTML='';
-    arr.forEach(label=>{
+    arr.forEach(({key,label})=>{
       const c=document.createElement('div');
-      c.className='chip'+(set.has(label)?' sel':'');
+      c.className='chip'+(set.has(key)?' sel':'');
       c.innerHTML=tick+'<span>'+label+'</span>';
-      c.onclick=()=>{ if(set.has(label))set.delete(label); else set.add(label); c.classList.toggle('sel'); };
+      c.onclick=()=>{ if(set.has(key))set.delete(key); else set.add(key); c.classList.toggle('sel'); };
       el.appendChild(c);
     });
   }
   buildChips('foodChips',FOODS,state.food);
   buildChips('drinkChips',DRINKS,state.drinks);
+
+  /* ---------- neighborhood grid (real data, real counts) ---------- */
+  function renderNeighGrid(){
+    const grid=document.getElementById('neighGrid');
+    if(!grid) return;
+    const counts={};
+    VENUES.forEach(v=>{ counts[v.neighborhood]=(counts[v.neighborhood]||0)+1; });
+    const sorted=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    grid.innerHTML=sorted.map(n=>
+      `<div class="neigh${state.neighborhood===n?' sel':''}" onclick="pickNeigh(this,'${n}')"><div class="n">${n}</div><div class="v">${counts[n]} venue${counts[n]===1?'':'s'}</div></div>`
+    ).join('');
+  }
+  renderNeighGrid();
+
+  /* ---------- venue matching engine ---------- */
+  const DRINK_VENUE_TYPES=['Cocktail Bar','Wine Bar','Brewery'];
+  const FOOD_VENUE_TYPES=['Fine Dining','Casual Dining'];
+
+  function scoreVenue(v, foodKeys, drinkKeys, neighborhood){
+    let score=0;
+    const matched=[];
+    foodKeys.forEach(k=>{ if(v.food.includes(k)){ score+=2; matched.push(k); } });
+    drinkKeys.forEach(k=>{ if(v.drink.includes(k)){ score+=2; matched.push(k); } });
+    if(neighborhood && v.neighborhood===neighborhood) score+=3;
+    return {score, matched};
+  }
+
+  /* picks the best-matching venue for a role ('food' or 'drink'), excluding names already used */
+  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood){
+    const types = role==='food' ? FOOD_VENUE_TYPES : DRINK_VENUE_TYPES;
+    const candidates = VENUES.filter(v=>types.includes(v.type) && !usedNames.has(v.name));
+    if(candidates.length===0) return null;
+    let best=null, bestScore=-1, bestMatched=[], bestDist=Infinity;
+    candidates.forEach(v=>{
+      const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood);
+      const dist = USER_LOCATION.live ? milesBetween(USER_LOCATION.lat,USER_LOCATION.lon,v.lat,v.lon) : 0;
+      if(score>bestScore || (score===bestScore && dist<bestDist)){
+        best=v; bestScore=score; bestMatched=matched; bestDist=dist;
+      }
+    });
+    return {venue:best, matched:bestMatched};
+  }
+
+  const PACE_PLANS={
+    2:[{role:'drink',course:'Aperitivo',time:'6:30 PM'},{role:'food',course:'Dinner',time:'8:00 PM'}],
+    3:[{role:'drink',course:'Aperitivo',time:'6:30 PM'},{role:'food',course:'Dinner',time:'8:00 PM'},{role:'drink',course:'Nightcap',time:'10:30 PM'}],
+    4:[{role:'drink',course:'Aperitivo',time:'6:00 PM'},{role:'food',course:'Dinner',time:'7:45 PM'},{role:'drink',course:'Second Pour',time:'9:15 PM'},{role:'drink',course:'Nightcap',time:'10:45 PM'}]
+  };
+
+  function buildItinerary(){
+    const plan = PACE_PLANS[state.pace] || PACE_PLANS[3];
+    const foodKeys=[...state.food], drinkKeys=[...state.drinks];
+    const used=new Set();
+    const stops=[];
+    plan.forEach(slot=>{
+      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood);
+      if(!pick) return;
+      used.add(pick.venue.name);
+      const why = pick.matched.length
+        ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
+        : (slot.role==='food' ? 'Hand-picked for tonight’s table.' : 'Hand-picked to open your night.');
+      stops.push({...slot, venue:pick.venue, why});
+    });
+    return stops;
+  }
 
   /* ---------- screen routing ---------- */
   const SCREENS=[
@@ -1514,16 +1564,79 @@
 
   function pickPace(el){
     el.parentNode.querySelectorAll('.pace').forEach(n=>n.classList.remove('sel'));
-    el.classList.add('sel'); state.pace=el.querySelector('.r').textContent;
+    el.classList.add('sel'); state.pace=parseInt(el.querySelector('.r').textContent,10);
   }
 
   /* ---------- results: build summary + checklist ---------- */
+  /* rough per-stop spend estimate from the venue's price tier ($ / $$ / $$$ / $$$$) */
+  function estimateSpend(v){
+    const dollarCount=(v.price.match(/\$/g)||[]).length;
+    return [15,35,75,150][Math.max(0,Math.min(3,dollarCount-1))] || 35;
+  }
+
+  const MAP_POINTS={
+    2:[[90,60],[270,90]],
+    3:[[90,44],[196,92],[286,70]],
+    4:[[70,55],[150,95],[230,58],[300,98]]
+  };
+
+  function renderMap(stops){
+    const pts = MAP_POINTS[stops.length] || MAP_POINTS[3];
+    const pathD = 'M'+pts.map(p=>p.join(' ')).join(' L');
+    const circles = pts.map((p,i)=>
+      `<circle cx="${p[0]}" cy="${p[1]}" r="11" fill="#0A0908" stroke="#C4A36B"/><text x="${p[0]}" y="${p[1]+4}" font-family="Cormorant Garamond" font-size="13" fill="#E8D0A0" text-anchor="middle">${i+1}</text>`
+    ).join('');
+    document.getElementById('resMapDynamic').innerHTML=
+      `<path d="${pathD}" stroke="#C4A36B" stroke-width="1.3" stroke-dasharray="3 5" fill="none" opacity=".8"/>${circles}`;
+    let miles=0;
+    for(let i=1;i<stops.length;i++){
+      miles += milesBetween(stops[i-1].venue.lat, stops[i-1].venue.lon, stops[i].venue.lat, stops[i].venue.lon);
+    }
+    document.getElementById('resLegend').textContent = stops.length>1
+      ? 'Your route · '+(miles<0.1?'a short walk':miles.toFixed(1)+' mi on foot')
+      : 'Your stop';
+  }
+
+  function renderTimelineItem(stop, index){
+    const v=stop.venue;
+    const spend=estimateSpend(v);
+    return `<div class="tl-item">
+      <div class="tl-line"></div>
+      <div class="tl-node"><span class="num">${index+1}</span><svg class="check" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="#1a140c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="tl-card">
+        <button class="heart-btn" onclick="event.stopPropagation(); toggleCardHeart(this, '${escJsStr(v.name)}')">♡</button>
+        <div class="time">${stop.time} · ${escHtml(stop.course)}</div>
+        <h4>${escHtml(v.name)}</h4>
+        <div class="type">${escHtml(v.type)} · ${escHtml(v.neighborhood)}</div>
+        ${priceDressLabel(v) ? `<div class="type" style="color:var(--brass);margin-top:2px">${escHtml(priceDressLabel(v))}</div>` : ''}
+        <div class="why">${escHtml(stop.why)}</div>
+        <button class="btn btn-fill" style="margin-top:14px;font-size:10px" onclick="confirmCheckin(this, ${spend})">Check in</button>
+        <div class="checkin-confirm" style="display:none;margin-top:12px;padding:14px;border:1px solid var(--brass);border-radius:3px;background:rgba(196,164,107,.08);text-align:center">
+          <div style="font-family:var(--display);font-weight:500;font-size:15px;color:var(--brass);display:flex;align-items:center;justify-content:center;gap:8px">
+            <span style="font-size:18px">✓</span> Checked in at <span data-venue>${escHtml(v.name)}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  let currentItinerary=[];
   function refreshResults(){
+    currentItinerary = buildItinerary();
+
     const sum=document.getElementById('resSummary'); sum.innerHTML='';
-    const items=[...state.food].slice(0,1).concat([...state.drinks].slice(0,1)).concat([state.pace]);
-    items.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t; sum.appendChild(p); });
-    document.querySelectorAll('#results .display-l')[0].innerHTML='Your evening,<br>'+state.neighborhood+'.';
-    document.querySelectorAll('#timeline .tl-item').forEach(i=>i.classList.remove('done'));
+    const pills=[...state.food].slice(0,1).concat([...state.drinks].slice(0,1)).map(k=>TAG_LABELS[k]||k);
+    pills.push(state.pace+' stop'+(state.pace===1?'':'s'));
+    pills.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t; sum.appendChild(p); });
+
+    const locationLabel = state.neighborhood || (USER_LOCATION.live ? USER_LOCATION.label.split(' · ')[0] : 'San Diego');
+    document.querySelectorAll('#results .display-l')[0].innerHTML='Your evening,<br>'+escHtml(locationLabel)+'.';
+
+    document.getElementById('timeline').innerHTML = currentItinerary.length
+      ? currentItinerary.map(renderTimelineItem).join('') + '<button class="btn btn-ghost" style="margin-top:22px" onclick="startFlow()">Recompose the evening</button>'
+      : '<div class="body-s" style="text-align:center;padding:20px 0">No venues matched — try different picks.</div><button class="btn btn-ghost" style="margin-top:22px" onclick="startFlow()">Recompose the evening</button>';
+
+    if(currentItinerary.length) renderMap(currentItinerary);
     updateProg();
   }
   function toggleStop(el){ el.classList.toggle('done'); updateProg(); }
@@ -1531,7 +1644,8 @@
     const items=document.querySelectorAll('#timeline .tl-item');
     const done=document.querySelectorAll('#timeline .tl-item.done').length;
     const note=document.getElementById('progNote');
-    if(done===items.length) note.innerHTML='Your moment is complete. You were seen at every door. ✦';
+    if(items.length===0) note.innerHTML='';
+    else if(done===items.length) note.innerHTML='Your moment is complete. You were seen at every door. ✦';
     else note.innerHTML='Check off each stop as the night unfolds — '+done+' of '+items.length+' complete.';
   }
 
@@ -1565,13 +1679,15 @@
   }
 
   function renderVenueCard(name, type, dist, isSaved){
-    return `<div class="venue-card" onclick="openVenueCheckin('${type}', '${name}')">
+    const venue = VENUES.find(v=>v.name===name);
+    const price = priceTier(venue);
+    return `<div class="venue-card" onclick="openVenueCheckin('${escJsStr(type)}', '${escJsStr(name)}')">
       <div class="venue-info">
-        <h4>${name}</h4>
+        <h4>${escHtml(name)}</h4>
         <span class="dist">${dist} mi away</span>
-        <span class="type">${type}</span>
+        <span class="type">${escHtml(type)}${price ? ' · '+escHtml(price) : ''}</span>
       </div>
-      <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSaveVenue('${name}', '${type}', ${dist}, this)" style="cursor:pointer">${isSaved ? '♥' : '♡'}</button>
+      <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="event.stopPropagation(); toggleSaveVenue('${escJsStr(name)}', '${escJsStr(type)}', ${dist}, this)" style="cursor:pointer">${isSaved ? '♥' : '♡'}</button>
     </div>`;
   }
 
@@ -1589,17 +1705,52 @@
 
   function renderNearbyVenues(){
     const venues = VENUES
+      .filter(v => state.exploreType==='All' || v.type===state.exploreType)
+      .filter(v => state.exploreNeighborhood==='All' || v.neighborhood===state.exploreNeighborhood)
       .map(v => ({name: v.name, type: v.type, dist: Math.round(milesBetween(USER_LOCATION.lat, USER_LOCATION.lon, v.lat, v.lon) * 10) / 10}))
       .sort((a, b) => a.dist - b.dist);
     const container = document.getElementById('nearbyVenues');
-    container.innerHTML = venues.map(v => {
-      const isSaved = state.savedVenues.some(sv => sv.name === v.name);
-      return renderVenueCard(v.name, v.type, v.dist, isSaved);
-    }).join('');
+    container.innerHTML = venues.length
+      ? venues.map(v => {
+          const isSaved = state.savedVenues.some(sv => sv.name === v.name);
+          return renderVenueCard(v.name, v.type, v.dist, isSaved);
+        }).join('')
+      : '<div class="body-s" style="text-align:center;padding:16px 0">No venues match these filters.</div>';
+  }
+
+  /* ---------- explore filters (type + neighborhood) ---------- */
+  function renderExploreFilters(){
+    const typeRow=document.getElementById('typeFilterRow');
+    if(typeRow){
+      const types=['All', ...Array.from(new Set(VENUES.map(v=>v.type))).sort()];
+      typeRow.innerHTML = types.map(t=>
+        `<div class="filter-chip${state.exploreType===t?' sel':''}" onclick="setExploreType('${escJsStr(t)}')">${escHtml(t)}</div>`
+      ).join('');
+    }
+    const sel=document.getElementById('neighFilterSelect');
+    if(sel){
+      const neighCounts={};
+      VENUES.forEach(v=>{ neighCounts[v.neighborhood]=(neighCounts[v.neighborhood]||0)+1; });
+      const neighs=Object.keys(neighCounts).sort((a,b)=>neighCounts[b]-neighCounts[a]);
+      sel.innerHTML = '<option value="All"'+(state.exploreNeighborhood==='All'?' selected':'')+'>All neighborhoods</option>'
+        + neighs.map(n=>`<option value="${escHtml(n)}"${state.exploreNeighborhood===n?' selected':''}>${escHtml(n)} (${neighCounts[n]})</option>`).join('');
+    }
+  }
+  function setExploreType(t){
+    state.exploreType=t;
+    renderExploreFilters();
+    renderNearbyVenues();
+    filterVenues();
+  }
+  function setExploreNeighborhood(v){
+    state.exploreNeighborhood=v;
+    renderNearbyVenues();
+    filterVenues();
   }
 
   // Initialize explore screen on load
   window.addEventListener('load', () => {
+    renderExploreFilters();
     renderSavedVenues();
     renderNearbyVenues();
   });
@@ -1659,6 +1810,11 @@
   function openVenueCheckin(type, name){
     document.getElementById('venueType').textContent = type;
     document.getElementById('venueName').innerHTML = name;
+    const venue = VENUES.find(v=>v.name===name);
+    const metaEl = document.getElementById('venueMeta');
+    const meta = priceDressLabel(venue);
+    metaEl.textContent = meta;
+    metaEl.style.display = meta ? 'block' : 'none';
     resetDone('venue');
     const statusEl = document.getElementById('venueGeoStatus');
     statusEl.style.display = 'none';
