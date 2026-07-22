@@ -291,10 +291,6 @@
     border:1px solid var(--line);border-radius:4px;padding:24px;text-align:center;margin-bottom:18px;
     background:radial-gradient(120% 120% at 50% 0%, rgba(196,164,107,.08), rgba(0,0,0,0) 70%);
   }
-  .geo-ping{position:relative;width:54px;height:54px;margin:0 auto 16px}
-  .geo-ping .dot{position:absolute;inset:0;margin:auto;width:12px;height:12px;border-radius:50%;background:var(--brass-bright);box-shadow:0 0 16px var(--brass)}
-  .geo-ping .ring{position:absolute;inset:0;border:1px solid var(--brass);border-radius:50%;animation:ping 2.4s ease-out infinite}
-  @keyframes ping{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1);opacity:0}}
   .neigh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
   .neigh{border:1px solid var(--line);border-radius:3px;padding:14px 12px;cursor:pointer;transition:.2s;text-align:left}
   .neigh:hover{border-color:var(--brass)}
@@ -751,11 +747,13 @@
           <div class="display-l">Where are you<br>tonight?</div>
           <div class="body-s flow-sub" style="margin-top:10px">We'll use your location to find venues within reach and verify you at the door.</div>
 
-          <div class="geo-card" onclick="requestGeolocation(true)" style="cursor:pointer">
-            <div class="geo-ping"><span class="ring"></span><span class="ring" style="animation-delay:1.2s"></span><span class="dot"></span></div>
-            <div class="eyebrow" style="color:var(--brass-bright)" id="geoStatus">Your location</div>
-            <div class="display-m" style="margin-top:6px" id="geoLabel">Downtown · San Diego</div>
-            <div class="body-s" style="margin-top:8px;font-size:11px" id="geoAccuracy">Tap to enable precise location</div>
+          <div class="geo-card" style="padding:0;overflow:hidden">
+            <div id="locMap" style="height:180px;width:100%"></div>
+            <div onclick="requestGeolocation(true)" style="cursor:pointer;padding:16px 24px 20px;text-align:center">
+              <div class="eyebrow" style="color:var(--brass-bright)" id="geoStatus">Your location</div>
+              <div class="display-m" style="margin-top:6px" id="geoLabel">Downtown · San Diego</div>
+              <div class="body-s" style="margin-top:8px;font-size:11px" id="geoAccuracy">Tap to enable precise location</div>
+            </div>
           </div>
 
           <div style="margin-top:28px">
@@ -1374,6 +1372,7 @@
         USER_LOCATION.live=true;
         updateGeoDisplay();
         renderNearbyVenues();
+        if(locLeafletMap) renderLocMap();
       },
       err=>{
         // surfaced for debugging — remove once geolocation is confirmed working end to end
@@ -1544,8 +1543,9 @@
     // reset confirmation screens back to their form state
     if(id==='reset') resetDone('reset');
     if(id==='venue-checkin') resetDone('venue');
-    if(id==='flow-loc' || id==='explore') requestGeolocation();
-    if(id==='results'){ requestGeolocation(); startLiveTracking(); } else { stopLiveTracking(); }
+    if(id==='flow-loc' || id==='explore' || id==='results') requestGeolocation();
+    if(id==='flow-loc' || id==='results') startLiveTracking(); else stopLiveTracking();
+    if(id==='flow-loc') renderLocMap();
     document.querySelectorAll('#protoChips button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
     syncNav(id);
   }
@@ -1652,9 +1652,32 @@
       : 'Your stop';
   }
 
-  /* called whenever the member's live position updates, to move the dot without a full re-render */
+  /* called whenever the member's live position updates, to move the dot(s) without a full re-render */
   function updateLiveMapPosition(lat,lon){
     if(resLiveMarker) resLiveMarker.setLatLng([lat,lon]);
+    if(locLiveMarker) locLiveMarker.setLatLng([lat,lon]);
+  }
+
+  /* ---------- "where are you tonight?" live map ---------- */
+  let locLeafletMap=null, locLiveMarker=null;
+
+  function ensureLocMap(){
+    if(locLeafletMap) return locLeafletMap;
+    locLeafletMap = L.map('locMap', {zoomControl:false, attributionControl:true, scrollWheelZoom:false})
+      .setView([USER_LOCATION.lat, USER_LOCATION.lon], 14);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains:'abcd', maxZoom:19,
+      attribution:'&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(locLeafletMap);
+    locLiveMarker = L.marker([USER_LOCATION.lat,USER_LOCATION.lon],{icon:liveIcon}).addTo(locLeafletMap);
+    return locLeafletMap;
+  }
+
+  function renderLocMap(){
+    const map = ensureLocMap();
+    map.setView([USER_LOCATION.lat, USER_LOCATION.lon], 14);
+    if(locLiveMarker) locLiveMarker.setLatLng([USER_LOCATION.lat, USER_LOCATION.lon]);
+    setTimeout(()=>map.invalidateSize(),50);
   }
 
   function renderTimelineItem(stop, index){
