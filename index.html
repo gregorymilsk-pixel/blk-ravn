@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
   :root{
     --raven-900:#0A0908;
@@ -343,11 +345,19 @@
   .res-summary{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
   .pill{font-family:var(--ui);font-weight:300;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);border:1px solid var(--line);border-radius:30px;padding:5px 11px}
   .map{
-    position:relative;height:172px;margin:22px 0 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    position:relative;height:220px;margin:22px 0 6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
     background:var(--raven-800);overflow:hidden;
   }
   .map svg{position:absolute;inset:0;width:100%;height:100%}
-  .map .legend{position:absolute;left:14px;bottom:12px;font-family:var(--ui);font-weight:300;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim)}
+  .map .legend{position:absolute;left:14px;bottom:12px;z-index:500;pointer-events:none;font-family:var(--ui);font-weight:300;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-bright,var(--bone));background:rgba(10,9,8,.7);padding:4px 8px;border-radius:2px}
+  #resMap{position:absolute;inset:0;width:100%;height:100%;background:var(--raven-800)}
+  .leaflet-control-zoom a{background:var(--raven-card)!important;color:var(--brass-bright)!important;border-color:var(--line)!important}
+  .leaflet-control-zoom a:hover{background:var(--raven-700)!important}
+  .leaflet-control-attribution{background:rgba(10,9,8,.75)!important;color:var(--bone-faint)!important;font-size:8px!important}
+  .leaflet-control-attribution a{color:var(--brass)!important}
+  .leaflet-bar{border-color:var(--line)!important}
+  .rvn-pin{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#0A0908;border:1.5px solid #C4A36B;color:#E8D0A0;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:500}
+  .rvn-live-dot{width:16px;height:16px;border-radius:50%;background:#F5E4C8;box-shadow:0 0 0 4px rgba(196,164,107,.35),0 0 12px rgba(245,228,200,.8)}
 
   .timeline{padding:8px 26px 0;position:relative}
   .tl-item{position:relative;padding:0 0 6px 44px;}
@@ -837,13 +847,7 @@
           </div>
 
           <div class="map">
-            <svg viewBox="0 0 360 172" preserveAspectRatio="xMidYMid slice" id="resMapSvg">
-              <defs><pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="rgba(196,164,107,0.07)" stroke-width="1"/></pattern></defs>
-              <rect width="360" height="172" fill="url(#grid)"/>
-              <path d="M-10 120 L120 60 L250 96 L380 40" stroke="rgba(196,164,107,0.10)" stroke-width="8" fill="none"/>
-              <path d="M40 -10 L80 90 L60 190" stroke="rgba(196,164,107,0.08)" stroke-width="6" fill="none"/>
-              <g id="resMapDynamic"></g>
-            </svg>
+            <div id="resMap"></div>
             <div class="legend" id="resLegend">Your route</div>
           </div>
 
@@ -1380,6 +1384,29 @@
     );
   }
 
+  /* ---------- continuous live tracking (results screen map only) ---------- */
+  let liveWatchId=null;
+  function startLiveTracking(){
+    if(liveWatchId!==null || !('geolocation' in navigator)) return;
+    liveWatchId = navigator.geolocation.watchPosition(
+      pos=>{
+        USER_LOCATION.lat=pos.coords.latitude;
+        USER_LOCATION.lon=pos.coords.longitude;
+        USER_LOCATION.accuracy=pos.coords.accuracy;
+        USER_LOCATION.live=true;
+        updateLiveMapPosition(USER_LOCATION.lat, USER_LOCATION.lon);
+      },
+      ()=>{ /* keep showing the last known position on watch errors */ },
+      {enableHighAccuracy:true, maximumAge:5000, timeout:10000}
+    );
+  }
+  function stopLiveTracking(){
+    if(liveWatchId!==null){
+      navigator.geolocation.clearWatch(liveWatchId);
+      liveWatchId=null;
+    }
+  }
+
   /* ---------- brand symbol (Twin Peaks) ---------- */
   // Returns SVG inner paths for a 66x60 viewBox in the given stroke color.
   function markPaths(c,w=1.2){
@@ -1518,6 +1545,7 @@
     if(id==='reset') resetDone('reset');
     if(id==='venue-checkin') resetDone('venue');
     if(id==='flow-loc' || id==='explore') requestGeolocation();
+    if(id==='results'){ requestGeolocation(); startLiveTracking(); } else { stopLiveTracking(); }
     document.querySelectorAll('#protoChips button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
     syncNav(id);
   }
@@ -1574,20 +1602,47 @@
     return [15,35,75,150][Math.max(0,Math.min(3,dollarCount-1))] || 35;
   }
 
-  const MAP_POINTS={
-    2:[[90,60],[270,90]],
-    3:[[90,44],[196,92],[286,70]],
-    4:[[70,55],[150,95],[230,58],[300,98]]
-  };
+  /* ---------- live Leaflet map ---------- */
+  let resLeafletMap=null, resMapLayer=null, resLiveMarker=null;
+
+  function ensureResMap(){
+    if(resLeafletMap) return resLeafletMap;
+    resLeafletMap = L.map('resMap', {zoomControl:true, attributionControl:true})
+      .setView([USER_LOCATION.lat, USER_LOCATION.lon], 14);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains:'abcd', maxZoom:19,
+      attribution:'&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(resLeafletMap);
+    resMapLayer = L.layerGroup().addTo(resLeafletMap);
+    return resLeafletMap;
+  }
+
+  function pinIcon(num){
+    return L.divIcon({className:'rvn-pin-wrap', html:'<div class="rvn-pin">'+num+'</div>', iconSize:[24,24], iconAnchor:[12,12]});
+  }
+  const liveIcon = L.divIcon({className:'rvn-live-wrap', html:'<div class="rvn-live-dot"></div>', iconSize:[16,16], iconAnchor:[8,8]});
 
   function renderMap(stops){
-    const pts = MAP_POINTS[stops.length] || MAP_POINTS[3];
-    const pathD = 'M'+pts.map(p=>p.join(' ')).join(' L');
-    const circles = pts.map((p,i)=>
-      `<circle cx="${p[0]}" cy="${p[1]}" r="11" fill="#0A0908" stroke="#C4A36B"/><text x="${p[0]}" y="${p[1]+4}" font-family="Cormorant Garamond" font-size="13" fill="#E8D0A0" text-anchor="middle">${i+1}</text>`
-    ).join('');
-    document.getElementById('resMapDynamic').innerHTML=
-      `<path d="${pathD}" stroke="#C4A36B" stroke-width="1.3" stroke-dasharray="3 5" fill="none" opacity=".8"/>${circles}`;
+    const map = ensureResMap();
+    resMapLayer.clearLayers();
+
+    const bounds=[];
+    stops.forEach((stop,i)=>{
+      const v=stop.venue;
+      L.marker([v.lat,v.lon],{icon:pinIcon(i+1)}).addTo(resMapLayer).bindPopup(escHtml(v.name));
+      bounds.push([v.lat,v.lon]);
+    });
+    if(stops.length>1){
+      L.polyline(stops.map(s=>[s.venue.lat,s.venue.lon]), {color:'#C4A36B',weight:2,dashArray:'3 5',opacity:.85}).addTo(resMapLayer);
+    }
+
+    resLiveMarker = L.marker([USER_LOCATION.lat,USER_LOCATION.lon],{icon:liveIcon,zIndexOffset:1000}).addTo(resMapLayer).bindPopup('You are here');
+    bounds.push([USER_LOCATION.lat,USER_LOCATION.lon]);
+
+    if(bounds.length>1) map.fitBounds(bounds,{padding:[28,28]});
+    else map.setView(bounds[0],15);
+    setTimeout(()=>map.invalidateSize(),50);
+
     let miles=0;
     for(let i=1;i<stops.length;i++){
       miles += milesBetween(stops[i-1].venue.lat, stops[i-1].venue.lon, stops[i].venue.lat, stops[i].venue.lon);
@@ -1595,6 +1650,11 @@
     document.getElementById('resLegend').textContent = stops.length>1
       ? 'Your route · '+(miles<0.1?'a short walk':miles.toFixed(1)+' mi on foot')
       : 'Your stop';
+  }
+
+  /* called whenever the member's live position updates, to move the dot without a full re-render */
+  function updateLiveMapPosition(lat,lon){
+    if(resLiveMarker) resLiveMarker.setLatLng([lat,lon]);
   }
 
   function renderTimelineItem(stop, index){
