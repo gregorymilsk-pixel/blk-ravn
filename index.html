@@ -805,6 +805,10 @@
           <div class="display-l">And to<br>drink?</div>
           <div class="body-s flow-sub" style="margin-top:10px">Your taste sets the bars we send you to — and what they'll have ready.</div>
           <div class="chip-grid" id="drinkChips"></div>
+
+          <div class="eyebrow" style="margin-top:28px">Venue style <span style="color:var(--bone-faint);text-transform:none;letter-spacing:0">(optional)</span></div>
+          <div class="body-s" style="color:var(--bone-dim);margin:6px 0 14px">Pick specific venue types to work into your night — we'll mix in one of each if you choose more than one.</div>
+          <div class="chip-grid" id="venueTypeChips"></div>
         </div>
         <div class="flow-foot">
           <button class="btn btn-fill" onclick="go('flow-pace')">Continue →</button>
@@ -1209,7 +1213,7 @@
 
 <script>
   /* ---------- state ---------- */
-  const state={ neighborhood:null, food:new Set(['steak']), drinks:new Set(['old_fashioned']), pace:3, radius:1, savedVenues:[], exploreType:'All', exploreNeighborhood:'All' };
+  const state={ neighborhood:null, food:new Set(['steak']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], exploreType:'All', exploreNeighborhood:'All' };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
@@ -1468,6 +1472,13 @@
   buildChips('foodChips',FOODS,state.food);
   buildChips('drinkChips',DRINKS,state.drinks);
 
+  const VENUE_TYPE_OPTIONS=[
+    {key:'Cocktail Bar',label:'Cocktail Bar'},
+    {key:'Wine Bar',label:'Wine Bar'},
+    {key:'Brewery',label:'Brewery'}
+  ];
+  buildChips('venueTypeChips',VENUE_TYPE_OPTIONS,state.venueTypes);
+
   /* ---------- neighborhood grid (real data, real counts) ---------- */
   function renderNeighGrid(){
     const grid=document.getElementById('neighGrid');
@@ -1496,8 +1507,8 @@
 
   /* picks the best-matching venue for a role ('food' or 'drink'), excluding names already used.
      refLat/refLon anchor the radius — the previous stop for chaining, or the member's location for the first stop. */
-  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius){
-    const types = role==='food' ? FOOD_VENUE_TYPES : DRINK_VENUE_TYPES;
+  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius, allowedTypes){
+    const types = (allowedTypes && allowedTypes.length) ? allowedTypes : (role==='food' ? FOOD_VENUE_TYPES : DRINK_VENUE_TYPES);
     let candidates = VENUES.filter(v=>types.includes(v.type) && !usedNames.has(v.name));
     if(candidates.length===0) return null;
 
@@ -1525,13 +1536,21 @@
   function buildItinerary(){
     const plan = PACE_PLANS[state.pace] || PACE_PLANS[3];
     const foodKeys=[...state.food], drinkKeys=[...state.drinks];
+    const selectedVenueTypes=[...state.venueTypes];
     const used=new Set();
+    const usedDrinkTypes=new Set();
     const stops=[];
     let refLat=USER_LOCATION.lat, refLon=USER_LOCATION.lon;
     plan.forEach(slot=>{
-      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius);
+      let allowedTypes=null;
+      if(slot.role==='drink' && selectedVenueTypes.length){
+        const remaining=selectedVenueTypes.filter(t=>!usedDrinkTypes.has(t));
+        allowedTypes = remaining.length ? remaining : selectedVenueTypes; // diversify first, then allow repeats
+      }
+      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, allowedTypes);
       if(!pick) return;
       used.add(pick.venue.name);
+      if(slot.role==='drink') usedDrinkTypes.add(pick.venue.type);
       let why = pick.matched.length
         ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
         : (slot.role==='food' ? 'Hand-picked for tonight’s table.' : 'Hand-picked to open your night.');
@@ -1736,6 +1755,7 @@
 
     const sum=document.getElementById('resSummary'); sum.innerHTML='';
     const pills=[...state.food].slice(0,1).concat([...state.drinks].slice(0,1)).map(k=>TAG_LABELS[k]||k);
+    if(state.venueTypes.size) pills.push([...state.venueTypes].join(' + '));
     pills.push(state.pace+' stop'+(state.pace===1?'':'s'));
     pills.push('within '+state.radius+' mi');
     pills.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t; sum.appendChild(p); });
