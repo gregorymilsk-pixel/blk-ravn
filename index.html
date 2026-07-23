@@ -827,6 +827,10 @@
             <div class="pace sel" onclick="pickPace(this)"><div class="l"><h4>The complete experience</h4><p>Aperitivo · dinner · nightcap</p></div><div class="r">3 stops</div></div>
             <div class="pace" onclick="pickPace(this)"><div class="l"><h4>Take me out</h4><p>The long way · four stops till late</p></div><div class="r">4 stops</div></div>
           </div>
+
+          <div class="eyebrow" style="margin-top:28px">How far between stops</div>
+          <div class="body-s" style="color:var(--bone-dim);margin:6px 0 14px">We'll keep each stop within this distance of the last.</div>
+          <div class="chip-grid" id="radiusChips"></div>
         </div>
         <div class="flow-foot">
           <button class="btn btn-fill" onclick="go('results')">Compose my moment ✦</button>
@@ -1205,7 +1209,7 @@
 
 <script>
   /* ---------- state ---------- */
-  const state={ neighborhood:null, food:new Set(['steak']), drinks:new Set(['old_fashioned']), pace:3, savedVenues:[], exploreType:'All', exploreNeighborhood:'All' };
+  const state={ neighborhood:null, food:new Set(['steak']), drinks:new Set(['old_fashioned']), pace:3, radius:1, savedVenues:[], exploreType:'All', exploreNeighborhood:'All' };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
@@ -1490,20 +1494,26 @@
     return {score, matched};
   }
 
-  /* picks the best-matching venue for a role ('food' or 'drink'), excluding names already used */
-  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood){
+  /* picks the best-matching venue for a role ('food' or 'drink'), excluding names already used.
+     refLat/refLon anchor the radius — the previous stop for chaining, or the member's location for the first stop. */
+  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius){
     const types = role==='food' ? FOOD_VENUE_TYPES : DRINK_VENUE_TYPES;
-    const candidates = VENUES.filter(v=>types.includes(v.type) && !usedNames.has(v.name));
+    let candidates = VENUES.filter(v=>types.includes(v.type) && !usedNames.has(v.name));
     if(candidates.length===0) return null;
+
+    const withDist = candidates.map(v=>({v, dist: milesBetween(refLat,refLon,v.lat,v.lon)}));
+    const inRadius = withDist.filter(x=>x.dist<=radius);
+    const pool = inRadius.length ? inRadius : withDist; // fall back to full pool if nothing fits the radius
+    const withinRadius = inRadius.length>0;
+
     let best=null, bestScore=-1, bestMatched=[], bestDist=Infinity;
-    candidates.forEach(v=>{
+    pool.forEach(({v,dist})=>{
       const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood);
-      const dist = USER_LOCATION.live ? milesBetween(USER_LOCATION.lat,USER_LOCATION.lon,v.lat,v.lon) : 0;
       if(score>bestScore || (score===bestScore && dist<bestDist)){
         best=v; bestScore=score; bestMatched=matched; bestDist=dist;
       }
     });
-    return {venue:best, matched:bestMatched};
+    return {venue:best, matched:bestMatched, dist:bestDist, withinRadius};
   }
 
   const PACE_PLANS={
@@ -1517,14 +1527,17 @@
     const foodKeys=[...state.food], drinkKeys=[...state.drinks];
     const used=new Set();
     const stops=[];
+    let refLat=USER_LOCATION.lat, refLon=USER_LOCATION.lon;
     plan.forEach(slot=>{
-      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood);
+      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius);
       if(!pick) return;
       used.add(pick.venue.name);
-      const why = pick.matched.length
+      let why = pick.matched.length
         ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
         : (slot.role==='food' ? 'Hand-picked for tonight’s table.' : 'Hand-picked to open your night.');
+      if(!pick.withinRadius) why += ' Closest match — just outside your '+state.radius+' mi radius.';
       stops.push({...slot, venue:pick.venue, why});
+      refLat=pick.venue.lat; refLon=pick.venue.lon;
     });
     return stops;
   }
@@ -1594,6 +1607,20 @@
     el.parentNode.querySelectorAll('.pace').forEach(n=>n.classList.remove('sel'));
     el.classList.add('sel'); state.pace=parseInt(el.querySelector('.r').textContent,10);
   }
+
+  const RADIUS_OPTIONS=[0.5,1,2];
+  function renderRadiusChips(){
+    const el=document.getElementById('radiusChips');
+    if(!el) return;
+    el.innerHTML=RADIUS_OPTIONS.map(r=>
+      `<div class="chip${state.radius===r?' sel':''}" onclick="pickRadius(${r})">${tick}<span>${r} mi</span></div>`
+    ).join('');
+  }
+  function pickRadius(r){
+    state.radius=r;
+    renderRadiusChips();
+  }
+  renderRadiusChips();
 
   /* ---------- results: build summary + checklist ---------- */
   /* rough per-stop spend estimate from the venue's price tier ($ / $$ / $$$ / $$$$) */
@@ -1710,6 +1737,7 @@
     const sum=document.getElementById('resSummary'); sum.innerHTML='';
     const pills=[...state.food].slice(0,1).concat([...state.drinks].slice(0,1)).map(k=>TAG_LABELS[k]||k);
     pills.push(state.pace+' stop'+(state.pace===1?'':'s'));
+    pills.push('within '+state.radius+' mi');
     pills.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t; sum.appendChild(p); });
 
     const locationLabel = state.neighborhood || (USER_LOCATION.live ? USER_LOCATION.label.split(' · ')[0] : 'San Diego');
