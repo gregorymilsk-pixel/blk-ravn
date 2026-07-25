@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <style>
   :root{
     --raven-900:#0A0908;
@@ -200,9 +202,6 @@
   .field-row .field{flex:1}
 
   .auth-meta{display:flex;justify-content:space-between;align-items:center;margin:2px 0 24px}
-  .faceid{display:flex;align-items:center;gap:8px;background:none;border:0;cursor:pointer;color:var(--bone-dim);font-family:var(--ui);font-weight:300;font-size:11px;letter-spacing:.06em}
-  .faceid:hover{color:var(--brass-bright)}
-  .faceid svg{color:var(--brass)}
 
   .checkrow{display:flex;align-items:flex-start;gap:11px;margin-bottom:24px;cursor:pointer}
   .checkbox{width:18px;height:18px;border:1px solid var(--line);border-radius:2px;flex:none;display:flex;align-items:center;justify-content:center;transition:.2s;margin-top:1px}
@@ -595,7 +594,7 @@
             <div class="display-l">Welcome back.</div>
           </div>
 
-          <div class="field"><label>Member number or email</label><input placeholder="0125 · you@email.com"></div>
+          <div class="field"><label>Email</label><input type="email" id="signinEmail" placeholder="you@email.com"></div>
           <div class="field">
             <label>Passphrase</label>
             <div class="pw-wrap">
@@ -606,15 +605,12 @@
             </div>
           </div>
 
-          <div class="auth-meta">
-            <button class="faceid" onclick="go('home')">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 7V5a2 2 0 012-2h2M17 7V5a2 2 0 00-2-2h-2M3 13v2a2 2 0 002 2h2M17 13v2a2 2 0 01-2 2h-2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><path d="M7.5 8v1.5M12.5 8v1.5M10 8v3l-1 .5M8 13.5c.7.6 3.3.6 4 0" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
-              Use Face ID
-            </button>
+          <div class="auth-meta" style="justify-content:flex-end">
             <button class="text-link" style="padding:6px 0" onclick="go('reset')">Forgot passphrase?</button>
           </div>
 
-          <button class="btn btn-fill" onclick="go('home')">Enter</button>
+          <div class="body-s" id="signinError" style="display:none;color:var(--brass);margin-bottom:14px"></div>
+          <button class="btn btn-fill" id="signinBtn" onclick="handleSignIn()">Enter</button>
           <div class="auth-foot">Not a member yet? <a onclick="go('join')">Create account</a></div>
         </div>
       </section>
@@ -636,8 +632,8 @@
 
           <div class="join-form">
             <div class="eyebrow">Create your account</div>
-            <div class="field"><label>Full name</label><input placeholder="Your name"></div>
-            <div class="field"><label>Email</label><input type="email" placeholder="you@email.com"></div>
+            <div class="field"><label>Full name</label><input id="joinName" placeholder="Your name"></div>
+            <div class="field"><label>Email</label><input type="email" id="joinEmail" placeholder="you@email.com"></div>
             <div class="field">
               <label>Create a passphrase</label>
               <div class="pw-wrap">
@@ -648,12 +644,13 @@
               </div>
             </div>
 
-            <div class="checkrow" onclick="this.classList.toggle('on')">
+            <div class="checkrow" id="joinTerms" onclick="this.classList.toggle('on')">
               <span class="checkbox"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
               <p>I agree to the <a>House Rules</a> and <a>Privacy Policy</a>, and to keep what's behind the door discreet.</p>
             </div>
 
-            <button class="btn btn-fill" onclick="go('home')">Create account</button>
+            <div class="body-s" id="joinError" style="display:none;color:var(--brass);margin-bottom:14px"></div>
+            <button class="btn btn-fill" id="joinBtn" onclick="handleSignUp()">Create account</button>
             <div class="auth-foot">Already a member? <a onclick="go('signin')">Sign in</a></div>
           </div>
         </div>
@@ -701,8 +698,9 @@
               <div class="display-l">Reset your<br>passphrase.</div>
               <div class="body-s" style="margin-top:10px">Enter the email on your membership and we'll send a secure link to set a new one.</div>
             </div>
-            <div class="field"><label>Email</label><input type="email" placeholder="you@email.com"></div>
-            <button class="btn btn-fill" onclick="showDone('reset')">Send reset link</button>
+            <div class="field"><label>Email</label><input type="email" id="resetEmail" placeholder="you@email.com"></div>
+            <div class="body-s" id="resetError" style="display:none;color:var(--brass);margin-bottom:14px"></div>
+            <button class="btn btn-fill" id="resetBtn" onclick="handlePasswordReset()">Send reset link</button>
             <div class="auth-foot">Remembered it? <a onclick="go('signin')">Back to sign in</a></div>
           </div>
           <div class="done-state" id="resetDone">
@@ -720,7 +718,7 @@
           <!-- GREETING -->
           <div>
             <div class="eyebrow greet-eyebrow">Good evening</div>
-            <div class="greet">Welcome back,<br><span class="member">Lynn</span></div>
+            <div class="greet">Welcome back,<br><span class="member" id="greetName">Member</span></div>
             <div class="body-s greet-sub" style="margin-top:8px;color:var(--bone-dim)">Ready to discover something new tonight?</div>
           </div>
 
@@ -1064,7 +1062,7 @@
                 <div style="text-align:right"><div class="mc-name">BLK RAVN</div><div class="mc-tier">Member</div></div>
               </div>
               <div class="mc-bottom">
-                <div class="mc-holder">Member<b>Lynn</b></div>
+                <div class="mc-holder">Member<b id="mcName">Member</b></div>
                 <div class="mc-no">0125</div>
               </div>
             </div>
@@ -1076,7 +1074,7 @@
             <div class="stat"><div class="num">$620</div><div class="lab">Spent</div></div>
           </div>
 
-          <button class="text-link" style="margin:24px auto 0;display:block" onclick="go('door')">Sign out</button>
+          <button class="text-link" style="margin:24px auto 0;display:block" onclick="handleSignOut()">Sign out</button>
         </div>
         <div class="navbar" id="nav-profile"></div>
       </section>
@@ -1212,6 +1210,116 @@
   </div>
 
 <script>
+  /* ---------- Firebase Authentication ---------- */
+  const firebaseConfig = {
+    apiKey: "AIzaSyC1EpdYPDcGhx71uj9he2s98LwDCjx7hK0",
+    authDomain: "blk-ravn.firebaseapp.com",
+    projectId: "blk-ravn",
+    storageBucket: "blk-ravn.firebasestorage.app",
+    messagingSenderId: "1036571847585",
+    appId: "1:1036571847585:web:eaae9c786eaecc755ef9e0",
+    measurementId: "G-DGNCP451X9"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  const AUTH_ERROR_MESSAGES={
+    'auth/email-already-in-use':"That email's already a member. Try signing in instead.",
+    'auth/invalid-email':"That doesn't look like a valid email.",
+    'auth/weak-password':'Passphrase needs to be at least 6 characters.',
+    'auth/wrong-password':"That passphrase doesn't match.",
+    'auth/user-not-found':"We don't have a member with that email.",
+    'auth/invalid-credential':"That email or passphrase doesn't match.",
+    'auth/too-many-requests':'Too many attempts — please wait a moment and try again.',
+    'auth/network-request-failed':'Connection issue — check your network and try again.'
+  };
+  function authErrorMessage(err){
+    return AUTH_ERROR_MESSAGES[err.code] || err.message || 'Something went wrong. Please try again.';
+  }
+  function showAuthError(id, message){
+    const el=document.getElementById(id);
+    el.textContent=message; el.style.display='block';
+  }
+  function hideAuthError(id){
+    document.getElementById(id).style.display='none';
+  }
+
+  function handleSignUp(){
+    const name=document.getElementById('joinName').value.trim();
+    const email=document.getElementById('joinEmail').value.trim();
+    const pw=document.getElementById('joinPw').value;
+    const terms=document.getElementById('joinTerms');
+    hideAuthError('joinError');
+
+    if(!name){ showAuthError('joinError','Enter your full name.'); return; }
+    if(!email){ showAuthError('joinError','Enter your email.'); return; }
+    if(pw.length<6){ showAuthError('joinError','Passphrase needs to be at least 6 characters.'); return; }
+    if(!terms.classList.contains('on')){ showAuthError('joinError','Please agree to the House Rules and Privacy Policy.'); return; }
+
+    const btn=document.getElementById('joinBtn');
+    btn.disabled=true; btn.textContent='Creating account…';
+    auth.createUserWithEmailAndPassword(email, pw)
+      .then(cred=>cred.user.updateProfile({displayName:name}))
+      .then(()=>{ updateMemberDisplay(auth.currentUser); go('home'); })
+      .catch(err=>{ showAuthError('joinError', authErrorMessage(err)); })
+      .finally(()=>{ btn.disabled=false; btn.textContent='Create account'; });
+  }
+
+  function handleSignIn(){
+    const email=document.getElementById('signinEmail').value.trim();
+    const pw=document.getElementById('signinPw').value;
+    hideAuthError('signinError');
+    if(!email || !pw){ showAuthError('signinError','Enter your email and passphrase.'); return; }
+
+    const btn=document.getElementById('signinBtn');
+    btn.disabled=true; btn.textContent='Signing in…';
+    auth.signInWithEmailAndPassword(email, pw)
+      .then(()=>{ go('home'); })
+      .catch(err=>{ showAuthError('signinError', authErrorMessage(err)); })
+      .finally(()=>{ btn.disabled=false; btn.textContent='Enter'; });
+  }
+
+  function handlePasswordReset(){
+    const email=document.getElementById('resetEmail').value.trim();
+    hideAuthError('resetError');
+    if(!email){ showAuthError('resetError','Enter your email.'); return; }
+
+    const btn=document.getElementById('resetBtn');
+    btn.disabled=true; btn.textContent='Sending…';
+    auth.sendPasswordResetEmail(email)
+      .then(()=>{ showDone('reset'); })
+      .catch(err=>{
+        // don't reveal whether the email is on file — show the same success state either way
+        if(err.code==='auth/user-not-found'){ showDone('reset'); }
+        else{ showAuthError('resetError', authErrorMessage(err)); }
+      })
+      .finally(()=>{ btn.disabled=false; btn.textContent='Send reset link'; });
+  }
+
+  function handleSignOut(){
+    auth.signOut().then(()=>go('door'));
+  }
+
+  function updateMemberDisplay(user){
+    const name=user.displayName || user.email.split('@')[0];
+    const greetEl=document.getElementById('greetName');
+    const mcEl=document.getElementById('mcName');
+    if(greetEl) greetEl.textContent=name;
+    if(mcEl) mcEl.textContent=name;
+  }
+
+  auth.onAuthStateChanged(user=>{
+    if(user){
+      updateMemberDisplay(user);
+      const authScreens=['door','signin','join','reset'];
+      const activeScreen=document.querySelector('.screen.active');
+      if(activeScreen && authScreens.includes(activeScreen.id)) go('home');
+    } else {
+      const activeScreen=document.querySelector('.screen.active');
+      if(activeScreen && PROTECTED_SCREENS.has(activeScreen.id)) go('door');
+    }
+  });
+
   /* ---------- state ---------- */
   const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], exploreType:'All', exploreNeighborhood:'All' };
 
@@ -1569,7 +1677,9 @@
     ['flow-food','Curate · Food'],['flow-drinks','Curate · Drinks'],['flow-pace','Curate · Pace'],
     ['results','The Itinerary'],['tiers','Tiers'],['events','Events'],['profile','Member Card']
   ];
+  const PROTECTED_SCREENS=new Set(['home','explore','venue-checkin','flow-loc','flow-food','flow-drinks','flow-pace','results','tiers','events','profile']);
   function go(id){
+    if(PROTECTED_SCREENS.has(id) && !auth.currentUser){ id='door'; }
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     const s=document.getElementById(id); s.classList.add('active');
     const sc=s.querySelector('.scroll'); if(sc) sc.scrollTop=0;
