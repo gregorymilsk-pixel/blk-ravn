@@ -11,6 +11,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --raven-900:#0A0908;
@@ -1069,9 +1070,9 @@
           </div>
 
           <div class="stat-row">
-            <div class="stat"><div class="num">37</div><div class="lab">Check-ins</div></div>
-            <div class="stat"><div class="num">14</div><div class="lab">Venues</div></div>
-            <div class="stat"><div class="num">$620</div><div class="lab">Spent</div></div>
+            <div class="stat"><div class="num" id="statCheckins">0</div><div class="lab">Check-ins</div></div>
+            <div class="stat"><div class="num" id="statVenues">0</div><div class="lab">Venues</div></div>
+            <div class="stat"><div class="num" id="statSpent">$0</div><div class="lab">Spent</div></div>
           </div>
 
           <button class="text-link" style="margin:24px auto 0;display:block" onclick="handleSignOut()">Sign out</button>
@@ -1222,6 +1223,70 @@
   };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  /* ---------- Firestore: per-member persistence ---------- */
+  function userDoc(){
+    return db.collection('users').doc(auth.currentUser.uid);
+  }
+  function saveVenueDoc(name, type){
+    if(!auth.currentUser) return;
+    userDoc().collection('savedVenues').doc(name)
+      .set({name, type, savedAt: firebase.firestore.FieldValue.serverTimestamp()})
+      .catch(err=>console.error('Failed to save venue:', err));
+  }
+  function unsaveVenueDoc(name){
+    if(!auth.currentUser) return;
+    userDoc().collection('savedVenues').doc(name).delete()
+      .catch(err=>console.error('Failed to unsave venue:', err));
+  }
+  function recordCheckinDoc(venueName, type, amount){
+    if(!auth.currentUser) return;
+    userDoc().collection('checkins').add({
+      venueName, type, amount: amount||0,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(()=>{
+      state.checkins.push({venueName, type, amount: amount||0});
+      renderProfileStats();
+    }).catch(err=>console.error('Failed to record check-in:', err));
+  }
+  function loadUserData(user){
+    userDoc().collection('savedVenues').get()
+      .then(snapshot=>{
+        state.savedVenues = snapshot.docs.map(doc=>{
+          const d=doc.data();
+          return {name:d.name, type:d.type, dist:0};
+        });
+        renderSavedVenues();
+        renderNearbyVenues();
+      })
+      .catch(err=>console.error('Failed to load saved venues:', err));
+
+    userDoc().collection('checkins').get()
+      .then(snapshot=>{
+        state.checkins = snapshot.docs.map(doc=>doc.data());
+        renderProfileStats();
+      })
+      .catch(err=>console.error('Failed to load check-ins:', err));
+  }
+  function clearUserData(){
+    state.savedVenues = [];
+    state.checkins = [];
+    renderSavedVenues();
+    renderProfileStats();
+  }
+
+  function renderProfileStats(){
+    const checkinsEl=document.getElementById('statCheckins');
+    const venuesEl=document.getElementById('statVenues');
+    const spentEl=document.getElementById('statSpent');
+    if(!checkinsEl) return;
+    const distinctVenues=new Set(state.checkins.map(c=>c.venueName));
+    const totalSpent=state.checkins.reduce((sum,c)=>sum+(c.amount||0),0);
+    checkinsEl.textContent=state.checkins.length;
+    venuesEl.textContent=distinctVenues.size;
+    spentEl.textContent='$'+totalSpent;
+  }
 
   const AUTH_ERROR_MESSAGES={
     'auth/email-already-in-use':"That email's already a member. Try signing in instead.",
@@ -1311,17 +1376,19 @@
   auth.onAuthStateChanged(user=>{
     if(user){
       updateMemberDisplay(user);
+      loadUserData(user);
       const authScreens=['door','signin','join','reset'];
       const activeScreen=document.querySelector('.screen.active');
       if(activeScreen && authScreens.includes(activeScreen.id)) go('home');
     } else {
+      clearUserData();
       const activeScreen=document.querySelector('.screen.active');
       if(activeScreen && PROTECTED_SCREENS.has(activeScreen.id)) go('door');
     }
   });
 
   /* ---------- state ---------- */
-  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], exploreType:'All', exploreNeighborhood:'All' };
+  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], exploreType:'All', exploreNeighborhood:'All' };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
@@ -1899,10 +1966,12 @@
       state.savedVenues.push(venue);
       btn.classList.add('saved');
       btn.textContent = '♥';
+      saveVenueDoc(name, type);
     } else {
       state.savedVenues.splice(idx, 1);
       btn.classList.remove('saved');
       btn.textContent = '♡';
+      unsaveVenueDoc(name);
     }
     renderSavedVenues();
   }
@@ -1913,10 +1982,14 @@
       state.savedVenues = state.savedVenues.filter(v => v.name !== name);
       btn.classList.remove('saved');
       btn.textContent = '♡';
+      unsaveVenueDoc(name);
     } else {
-      state.savedVenues.push({name, type: '', dist: 0});
+      const venue = VENUES.find(v=>v.name===name);
+      const type = venue ? venue.type : '';
+      state.savedVenues.push({name, type, dist: 0});
       btn.classList.add('saved');
       btn.textContent = '♥';
+      saveVenueDoc(name, type);
     }
   }
 
@@ -2080,6 +2153,7 @@
         statusEl.style.display = 'none';
         document.getElementById('venueForm').classList.add('hide');
         document.getElementById('venueDone').classList.add('show');
+        recordCheckinDoc(name, document.getElementById('venueType').textContent, 0);
       },
       onTooFar: (dist) => {
         btn.disabled = false;
@@ -2140,6 +2214,8 @@
     const item = card.closest('.tl-item');
     item.classList.add('done');
     eveningTotal += amount;
+    const venue = VENUES.find(v=>v.name===venueName);
+    recordCheckinDoc(venueName, venue ? venue.type : '', amount);
 
     updateProg();
 
