@@ -1229,6 +1229,15 @@
   function userDoc(){
     return db.collection('users').doc(auth.currentUser.uid);
   }
+  /* writes identifying fields onto the user doc itself, so it's readable/filterable
+     in the Firestore console instead of only being findable by opaque UID */
+  function syncUserProfile(user){
+    userDoc().set({
+      displayName: user.displayName || '',
+      email: user.email || '',
+      lastSignIn: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true}).catch(err=>console.error('Failed to sync profile:', err));
+  }
   function saveVenueDoc(name, type){
     if(!auth.currentUser) return;
     userDoc().collection('savedVenues').doc(name)
@@ -1325,7 +1334,7 @@
     btn.disabled=true; btn.textContent='Creating account…';
     auth.createUserWithEmailAndPassword(email, pw)
       .then(cred=>cred.user.updateProfile({displayName:name}))
-      .then(()=>{ updateMemberDisplay(auth.currentUser); go('home'); })
+      .then(()=>{ updateMemberDisplay(auth.currentUser); syncUserProfile(auth.currentUser); go('home'); })
       .catch(err=>{ showAuthError('joinError', authErrorMessage(err)); })
       .finally(()=>{ btn.disabled=false; btn.textContent='Create account'; });
   }
@@ -1376,6 +1385,7 @@
   auth.onAuthStateChanged(user=>{
     if(user){
       updateMemberDisplay(user);
+      syncUserProfile(user);
       loadUserData(user);
       const authScreens=['door','signin','join','reset'];
       const activeScreen=document.querySelector('.screen.active');
