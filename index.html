@@ -1064,7 +1064,7 @@
               </div>
               <div class="mc-bottom">
                 <div class="mc-holder">Member<b id="mcName">Member</b></div>
-                <div class="mc-no">0125</div>
+                <div class="mc-no" id="mcNumber">····</div>
               </div>
             </div>
           </div>
@@ -1232,11 +1232,42 @@
   /* writes identifying fields onto the user doc itself, so it's readable/filterable
      in the Firestore console instead of only being findable by opaque UID */
   function syncUserProfile(user){
-    userDoc().set({
-      displayName: user.displayName || '',
-      email: user.email || '',
-      lastSignIn: firebase.firestore.FieldValue.serverTimestamp()
-    }, {merge:true}).catch(err=>console.error('Failed to sync profile:', err));
+    const ref=userDoc();
+    // read first, then write — an unawaited set() racing a get() can make the get()
+    // see the optimistic local cache for the set's fields only, missing memberNumber
+    // and wrongly appear as if the reset one hadn't been assigned yet
+    ref.get().then(doc=>{
+      const existing=doc.exists ? doc.data().memberNumber : null;
+      ref.set({
+        displayName: user.displayName || '',
+        email: user.email || '',
+        lastSignIn: firebase.firestore.FieldValue.serverTimestamp()
+      }, {merge:true}).catch(err=>console.error('Failed to sync profile:', err));
+
+      if(existing){ updateMemberNumberDisplay(existing); }
+      else { assignMemberNumber().then(num=>updateMemberNumberDisplay(num)); }
+    }).catch(err=>console.error('Failed to check member number:', err));
+  }
+
+  /* atomically hands out the next sequential member number — a Firestore
+     transaction guarantees two signups at the same instant can't collide */
+  function assignMemberNumber(){
+    const counterRef=db.collection('meta').doc('memberCounter');
+    return db.runTransaction(t=>{
+      return t.get(counterRef).then(doc=>{
+        const next=doc.exists ? (doc.data().count+1) : 1;
+        t.set(counterRef, {count:next});
+        return next;
+      });
+    }).then(next=>{
+      const memberNumber=String(next).padStart(4,'0');
+      return userDoc().set({memberNumber}, {merge:true}).then(()=>memberNumber);
+    }).catch(err=>{ console.error('Failed to assign member number:', err); return null; });
+  }
+
+  function updateMemberNumberDisplay(num){
+    const el=document.getElementById('mcNumber');
+    if(el && num) el.textContent=num;
   }
   function saveVenueDoc(name, type){
     if(!auth.currentUser) return;
