@@ -899,7 +899,8 @@
           <div class="done-state" id="venueDone">
             <div class="seal"><svg width="30" height="27" viewBox="0 0 24 24" fill="none"><path d="M9 16.2L4.8 12m-1 1L9 18 20 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
             <div class="display-l">Checked in.</div>
-            <div class="body-s" style="margin-top:12px;max-width:250px">Status earned. Keep exploring — every visit brings you closer to Elite.</div>
+            <div class="eyebrow" id="venueDonePoints" style="color:var(--brass-bright);margin-top:10px"></div>
+            <div class="body-s" style="margin-top:12px;max-width:250px">Keep exploring — every visit and every dollar spent earns you points toward BLK RAVN's private events.</div>
             <button class="btn btn-ghost" style="margin-top:28px;max-width:220px" onclick="go('explore')">Back to explore</button>
           </div>
         </div>
@@ -947,7 +948,7 @@
       </section>
 
       <!-- ============ REWARDS / TIERS ============ -->
-      <section class="screen" id="tiers" style="display:none">
+      <section class="screen" id="tiers">
         <div class="scroll fadein">
           <div>
             <div class="eyebrow">Four levels.</div>
@@ -1075,128 +1076,28 @@
             <div class="stat"><div class="num" id="statSpent">$0</div><div class="lab">Spent</div></div>
           </div>
 
+          <button class="btn btn-fill" style="margin-top:24px" onclick="go('events')">View Rewards &amp; Private Events →</button>
           <button class="text-link" style="margin:24px auto 0;display:block" onclick="handleSignOut()">Sign out</button>
         </div>
         <div class="navbar" id="nav-profile"></div>
       </section>
 
       <!-- ============ EVENTS CALENDAR ============ -->
-      <section class="screen" id="events" style="display:none">
+      <section class="screen" id="events">
         <div class="scroll fadein">
           <div>
-            <div class="eyebrow">Your calendar</div>
-            <div class="display-l">Exclusive Events</div>
-            <div class="body-s" style="margin-top:8px;color:var(--bone-dim)">Sign up for upcoming BLK RAVN private experiences. Unlock higher tiers to access premium events.</div>
+            <div class="eyebrow">Your rewards</div>
+            <div class="display-l">Points &amp;<br>Private Events</div>
+            <div class="body-s" style="margin-top:8px;color:var(--bone-dim)">Every check-in earns points — spend more, earn more. Redeem them for BLK RAVN's most exclusive experiences.</div>
           </div>
 
-          <!-- UPCOMING EVENTS -->
-          <div style="margin-top:28px">
-            
-            <!-- INSIDER EVENT -->
-            <div style="margin-bottom:18px">
-              <div style="font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin-bottom:10px">Available to you</div>
-              
-              <div style="padding:14px;border:1px solid var(--brass);border-radius:4px;background:rgba(196,164,107,.08);margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                  <div>
-                    <div style="font-family:var(--display);font-weight:500;font-size:13px;color:var(--bone)">Rooftop Mixer</div>
-                    <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--brass);margin-top:2px">Bay City Rooftop</div>
-                  </div>
-                  <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
-                    <div>Sep 14</div>
-                    <div>8:00 PM</div>
-                  </div>
-                </div>
-                <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">Private member-only mixer with local sponsors. Complimentary drinks & curated experiences.</div>
-                <button class="btn btn-fill" style="width:100%;font-size:10px;padding:8px">Sign Up</button>
-              </div>
-            </div>
-
-            <!-- ELITE EVENTS (LOCKED) -->
-            <div style="margin-bottom:18px">
-              <div style="font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--bone-dim);margin-bottom:10px">Unlock at Elite</div>
-              
-              <div style="padding:14px;border:1px solid var(--line-soft);border-radius:4px;background:rgba(0,0,0,.2);opacity:.6;margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                  <div>
-                    <div style="font-family:var(--display);font-weight:500;font-size:13px;color:var(--bone-dim)">🔒 Private Chef's Tasting</div>
-                    <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);margin-top:2px">Born and Raised</div>
-                  </div>
-                  <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
-                    <div>Oct 3</div>
-                    <div>7:00 PM</div>
-                  </div>
-                </div>
-                <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">Multi-course tasting with wine pairings at San Diego's most coveted dining destination.</div>
-                <button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Reach Elite to Sign Up</button>
-              </div>
-
-              <div style="padding:14px;border:1px solid var(--line-soft);border-radius:4px;background:rgba(0,0,0,.2);opacity:.6">
-                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                  <div>
-                    <div style="font-family:var(--display);font-weight:500;font-size:13px;color:var(--bone-dim)">🔒 Espresso Martini Masterclass</div>
-                    <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);margin-top:2px">Lafayette Hotel</div>
-                  </div>
-                  <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
-                    <div>Oct 18</div>
-                    <div>6:00 PM</div>
-                  </div>
-                </div>
-                <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">Learn cocktail craft from expert mixologists. Hands-on class with takeaway recipes.</div>
-                <button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Reach Elite to Sign Up</button>
-              </div>
-            </div>
-
-            <!-- FOUNDER'S CIRCLE EVENTS (LOCKED) -->
-            <div>
-              <div style="font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--bone-dim);margin-bottom:10px">Unlock at Founder's Circle</div>
-              
-              <div style="padding:14px;border:1px solid var(--line-soft);border-radius:4px;background:rgba(0,0,0,.2);opacity:.6;margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                  <div>
-                    <div style="font-family:var(--display);font-weight:500;font-size:13px;color:var(--bone-dim)">🔒 Monaco F1 Experience</div>
-                    <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);margin-top:2px">BLK RAVN Yacht, Monaco</div>
-                  </div>
-                  <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
-                    <div>May 23-26</div>
-                    <div>Grand Prix</div>
-                  </div>
-                </div>
-                <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">Private yacht overlooking the Formula 1 Grand Prix. Champagne & Michelin-starred catering.</div>
-                <button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Reach Founder's Circle</button>
-              </div>
-
-              <div style="padding:14px;border:1px solid var(--line-soft);border-radius:4px;background:rgba(0,0,0,.2);opacity:.6;margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                  <div>
-                    <div style="font-family:var(--display);font-weight:500;font-size:13px;color:var(--bone-dim)">🔒 Noma Copenhagen</div>
-                    <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);margin-top:2px">Copenhagen, Denmark</div>
-                  </div>
-                  <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
-                    <div>Jun 8</div>
-                    <div>7:00 PM</div>
-                  </div>
-                </div>
-                <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">Seat at the table at the world's most acclaimed restaurant. Flight included.</div>
-                <button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Reach Founder's Circle</button>
-              </div>
-
-              <div style="padding:14px;border:1px solid var(--line-soft);border-radius:4px;background:rgba(0,0,0,.2);opacity:.6">
-                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
-                  <div>
-                    <div style="font-family:var(--display);font-weight:500;font-size:13px;color:var(--bone-dim)">🔒 LA Olympics VIP</div>
-                    <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);margin-top:2px">Los Angeles, 2028</div>
-                  </div>
-                  <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
-                    <div>Jul-Aug 2028</div>
-                    <div>Premium Seats</div>
-                  </div>
-                </div>
-                <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">VIP box seats at the 2028 LA Olympics. Experience athletic excellence from the best vantage.</div>
-                <button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Reach Founder's Circle</button>
-              </div>
-            </div>
+          <div style="margin-top:24px;padding:20px;border:1px solid var(--line);border-radius:4px;background:radial-gradient(120% 100% at 50% 0%, rgba(196,164,107,.10), rgba(0,0,0,0) 70%);text-align:center">
+            <div class="eyebrow">Your balance</div>
+            <div class="display-xl" id="pointsBalance" style="margin-top:8px">0</div>
+            <div class="body-s" style="margin-top:2px;color:var(--bone-dim)">points</div>
           </div>
+
+          <div id="rewardEventsList" style="margin-top:28px"></div>
         </div>
         <div class="navbar" id="nav-events"></div>
       </section>
@@ -1326,6 +1227,65 @@
     checkinsEl.textContent=state.checkins.length;
     venuesEl.textContent=distinctVenues.size;
     spentEl.textContent='$'+totalSpent;
+    state.points=computePoints(state.checkins);
+    renderRewards();
+  }
+
+  /* ---------- rewards points ---------- */
+  /* editable: how many points a member earns per check-in and per dollar spent */
+  const POINTS_CONFIG={ perCheckin:10, perDollarSpent:1 };
+  function computePoints(checkins){
+    return checkins.reduce((sum,c)=>sum + POINTS_CONFIG.perCheckin + Math.round((c.amount||0)*POINTS_CONFIG.perDollarSpent), 0);
+  }
+
+  /* private events gated by points instead of the old fake tier names */
+  const REWARD_EVENTS=[
+    {name:'Rooftop Mixer', venue:'Bay City Rooftop', date:'Sep 14', time:'8:00 PM', points:0,
+      desc:'Private member-only mixer with local sponsors. Complimentary drinks & curated experiences.'},
+    {name:"Private Chef's Tasting", venue:'Born & Raised', date:'Oct 3', time:'7:00 PM', points:500,
+      desc:"Multi-course tasting with wine pairings at San Diego's most coveted dining destination."},
+    {name:'Espresso Martini Masterclass', venue:'Lafayette Hotel', date:'Oct 18', time:'6:00 PM', points:500,
+      desc:'Learn cocktail craft from expert mixologists. Hands-on class with takeaway recipes.'},
+    {name:'Monaco F1 Experience', venue:'BLK RAVN Yacht, Monaco', date:'May 23-26', time:'Grand Prix', points:5000,
+      desc:'Private yacht overlooking the Formula 1 Grand Prix. Champagne & Michelin-starred catering.'},
+    {name:'Noma Copenhagen', venue:'Copenhagen, Denmark', date:'Jun 8', time:'7:00 PM', points:5000,
+      desc:"Seat at the table at the world's most acclaimed restaurant. Flight included."},
+    {name:'LA Olympics VIP', venue:'Los Angeles, 2028', date:'Jul-Aug 2028', time:'Premium Seats', points:5000,
+      desc:'VIP box seats at the 2028 LA Olympics. Experience athletic excellence from the best vantage.'}
+  ];
+
+  function renderRewards(){
+    const balanceEl=document.getElementById('pointsBalance');
+    const listEl=document.getElementById('rewardEventsList');
+    if(!balanceEl || !listEl) return;
+    const points=state.points||0;
+    balanceEl.textContent=points.toLocaleString();
+
+    listEl.innerHTML=REWARD_EVENTS.map(ev=>{
+      const unlocked=points>=ev.points;
+      const progress=ev.points===0
+        ? 'Open to all members'
+        : unlocked
+          ? '✓ Unlocked'
+          : `${points.toLocaleString()} / ${ev.points.toLocaleString()} pts`;
+      return `<div style="padding:14px;border:1px solid ${unlocked?'var(--brass)':'var(--line-soft)'};border-radius:4px;background:${unlocked?'rgba(196,164,107,.08)':'rgba(0,0,0,.2)'};${unlocked?'':'opacity:.7'};margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+          <div>
+            <div style="font-family:var(--display);font-weight:500;font-size:13px;color:${unlocked?'var(--bone)':'var(--bone-dim)'}">${unlocked?'':'🔒 '}${escHtml(ev.name)}</div>
+            <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--brass);margin-top:2px">${escHtml(ev.venue)}</div>
+          </div>
+          <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
+            <div>${escHtml(ev.date)}</div>
+            <div>${escHtml(ev.time)}</div>
+          </div>
+        </div>
+        <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">${escHtml(ev.desc)}</div>
+        <div style="font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${unlocked?'var(--brass-bright)':'var(--bone-faint)'};margin-bottom:10px">${progress}</div>
+        ${unlocked
+          ? `<button class="btn btn-fill" style="width:100%;font-size:10px;padding:8px">Sign Up</button>`
+          : `<button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Locked</button>`}
+      </div>`;
+    }).join('');
   }
 
   const AUTH_ERROR_MESSAGES={
@@ -1429,10 +1389,11 @@
   });
 
   /* ---------- state ---------- */
-  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], exploreType:'All', exploreNeighborhood:'All' };
+  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, exploreType:'All', exploreNeighborhood:'All' };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
+  {name:'The Harland Clubhouse',type:'Brewery',neighborhood:'Pacific Beach',lat:32.7990666,lon:-117.217383,hours:['8:00 AM - 10:00 PM','8:00 AM - 10:00 PM','8:00 AM - 10:00 PM','8:00 AM - 10:00 PM','8:00 AM - 10:00 PM','8:00 AM - 10:00 PM','8:00 AM - 10:00 PM'],food:['vegetarian'],drink:['beer','ipa'],ambiance:['lively'],bestFor:['happy_hour','guys_night'],price:'$$',dress:'Casual'},
   {name:'Bay City Brewing Co Tasting Room',type:'Brewery',neighborhood:'Downtown',lat:32.7120193,lon:-117.1572392,hours:['3:00 PM - 9:00 PM','3:00 PM - 9:00 PM','12:00 PM - 9:00 PM','12:00 PM - 9:00 PM','12:00 PM - 11:00 PM','12:00 PM - 11:00 PM','12:00 PM - 6:00 PM'],food:[],drink:['beer','ipa'],ambiance:['lively'],bestFor:['happy_hour','guys_night'],price:'$$',dress:'Casual'},
   {name:'Callie',type:'Fine Dining',neighborhood:'Downtown',lat:32.7164,lon:-117.1611,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM'],food:['steak','seafood','vegetarian','gluten_free','mediterranean'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['romantic','luxury','patio'],bestFor:['date_night','celebration'],price:'$$$',dress:'Smart Casual'},
   {name:'Animae',type:'Fine Dining',neighborhood:'Downtown',lat:32.715123784527044,lon:-117.17051428447297,hours:['Closed','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','5:00 PM - 10:00 PM','Closed'],food:['wagyu','sushi','seafood','vegetarian','gluten_free','asian'],drink:['espresso','cocktails','espresso_martini','old_fashioned','martini','wine','champagne','bourbon','whiskey','tequila','gin','beer','mocktails'],ambiance:['lively','luxury'],bestFor:['date_night','business_dinner','client_meeting'],price:'$$$$',dress:'Smart Casual'},
@@ -1963,6 +1924,7 @@
           <div style="font-family:var(--display);font-weight:500;font-size:15px;color:var(--brass);display:flex;align-items:center;justify-content:center;gap:8px">
             <span style="font-size:18px">✓</span> Checked in at <span data-venue>${escHtml(v.name)}</span>
           </div>
+          <div class="body-s" data-points style="margin-top:6px;color:var(--brass-bright)"></div>
         </div>
       </div>
     </div>`;
@@ -2194,6 +2156,7 @@
         statusEl.style.display = 'none';
         document.getElementById('venueForm').classList.add('hide');
         document.getElementById('venueDone').classList.add('show');
+        document.getElementById('venueDonePoints').textContent = '+'+POINTS_CONFIG.perCheckin+' points earned';
         recordCheckinDoc(name, document.getElementById('venueType').textContent, 0);
       },
       onTooFar: (dist) => {
@@ -2260,16 +2223,13 @@
 
     updateProg();
 
-    // Update confirmation message with venue name and progress
+    // Update confirmation message with venue name and points earned
     const confirmTitle = confirm.querySelector('[data-venue]');
     if(confirmTitle) confirmTitle.textContent = venueName;
 
-    // Calculate progress (assuming 6 check-ins to next tier, 1 per venue = 3 check-ins this evening + need 3 more)
-    const remainingAfter = 6 - 3; // 3 venues checked in = 3 checkins total
-    const progressText = confirm.querySelector('[data-progress]');
-    if(progressText && remainingAfter > 0){
-      progressText.textContent = remainingAfter + ' more check-in' + (remainingAfter === 1 ? '' : 's') + ' to Elite';
-    }
+    const pointsEarned = POINTS_CONFIG.perCheckin + Math.round(amount*POINTS_CONFIG.perDollarSpent);
+    const pointsText = confirm.querySelector('[data-points]');
+    if(pointsText) pointsText.textContent = '+'+pointsEarned+' points earned';
 
     confirm.style.display = 'block';
     }
@@ -2293,12 +2253,13 @@
         '<svg viewBox="0 0 22 22" fill="none">'+n.svg+'</svg><span class="lab">'+n.lab+'</span></button>';
     }).join('');
   }
-  ['home','results','explore','profile'].forEach(id=>{
+  ['home','results','explore','profile','events'].forEach(id=>{
     const bar=document.getElementById('nav-'+id);
-    if(bar) bar.innerHTML=navHTML(id==='results'?'home':id);
+    if(bar) bar.innerHTML=navHTML(id==='results'?'home':id==='events'?'profile':id);
   });
   function syncNav(id){
     if(id==='results'){ refreshResults(); }
+    if(id==='events'){ renderRewards(); }
   }
 
   /* ---------- prototype navigator chips ---------- */
