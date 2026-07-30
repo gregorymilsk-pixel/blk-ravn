@@ -1077,6 +1077,7 @@
           </div>
 
           <button class="btn btn-fill" style="margin-top:24px" onclick="go('events')">View Rewards &amp; Private Events →</button>
+          <button class="btn btn-ghost" id="adminLinkBtn" style="margin-top:12px;display:none" onclick="go('admin-roster')">Staff: View Event Rosters →</button>
           <button class="text-link" style="margin:24px auto 0;display:block" onclick="handleSignOut()">Sign out</button>
         </div>
         <div class="navbar" id="nav-profile"></div>
@@ -1094,12 +1095,26 @@
           <div style="margin-top:24px;padding:20px;border:1px solid var(--line);border-radius:4px;background:radial-gradient(120% 100% at 50% 0%, rgba(196,164,107,.10), rgba(0,0,0,0) 70%);text-align:center">
             <div class="eyebrow">Your balance</div>
             <div class="display-xl" id="pointsBalance" style="margin-top:8px">0</div>
-            <div class="body-s" style="margin-top:2px;color:var(--bone-dim)">points</div>
+            <div class="body-s" style="margin-top:2px;color:var(--bone-dim)">points available</div>
+            <div class="body-s" id="pointsEarnedNote" style="margin-top:8px;color:var(--bone-faint);font-size:10px"></div>
           </div>
 
           <div id="rewardEventsList" style="margin-top:28px"></div>
         </div>
         <div class="navbar" id="nav-events"></div>
+      </section>
+
+      <!-- ============ STAFF — EVENT ROSTERS ============ -->
+      <section class="screen" id="admin-roster">
+        <div class="scroll fadein">
+          <div>
+            <div class="eyebrow">Staff only</div>
+            <div class="display-l">Event Rosters</div>
+            <div class="body-s" style="margin-top:8px;color:var(--bone-dim)">Members who have redeemed points for each private event.</div>
+          </div>
+          <div id="adminRosterList" style="margin-top:24px"></div>
+        </div>
+        <div class="navbar" id="nav-admin-roster"></div>
       </section>
 
     </div>
@@ -1169,6 +1184,7 @@
   function updateMemberNumberDisplay(num){
     const el=document.getElementById('mcNumber');
     if(el && num) el.textContent=num;
+    if(num) state.memberNumber=num;
   }
   function saveVenueDoc(name, type){
     if(!auth.currentUser) return;
@@ -1209,10 +1225,28 @@
         renderProfileStats();
       })
       .catch(err=>console.error('Failed to load check-ins:', err));
+
+    db.collection('eventSignups').where('uid','==',user.uid).get()
+      .then(snapshot=>{
+        state.eventSignups = snapshot.docs.map(doc=>({id:doc.id, ...doc.data()}));
+        renderProfileStats();
+      })
+      .catch(err=>console.error('Failed to load event signups:', err));
+
+    db.collection('admins').doc(user.uid).get()
+      .then(doc=>{
+        state.isAdmin=doc.exists;
+        renderAdminLink();
+      })
+      .catch(()=>{ state.isAdmin=false; renderAdminLink(); }); // network/offline fallback — reading your own non-existent admin doc is a normal successful read (doc.exists===false), not a permission error
   }
   function clearUserData(){
     state.savedVenues = [];
     state.checkins = [];
+    state.eventSignups = [];
+    state.memberNumber = '';
+    state.isAdmin = false;
+    renderAdminLink();
     renderSavedVenues();
     renderProfileStats();
   }
@@ -1228,6 +1262,8 @@
     venuesEl.textContent=distinctVenues.size;
     spentEl.textContent='$'+totalSpent;
     state.points=computePoints(state.checkins);
+    state.redeemedPoints=computeRedeemedPoints(state.eventSignups);
+    state.availablePoints=Math.max(0, state.points-state.redeemedPoints);
     renderRewards();
   }
 
@@ -1236,6 +1272,9 @@
   const POINTS_CONFIG={ perCheckin:10, perDollarSpent:1 };
   function computePoints(checkins){
     return checkins.reduce((sum,c)=>sum + POINTS_CONFIG.perCheckin + Math.round((c.amount||0)*POINTS_CONFIG.perDollarSpent), 0);
+  }
+  function computeRedeemedPoints(signups){
+    return signups.reduce((sum,s)=>sum+(s.pointsCost||0), 0);
   }
 
   /* private events gated by points instead of the old fake tier names */
@@ -1258,20 +1297,37 @@
     const balanceEl=document.getElementById('pointsBalance');
     const listEl=document.getElementById('rewardEventsList');
     if(!balanceEl || !listEl) return;
-    const points=state.points||0;
-    balanceEl.textContent=points.toLocaleString();
+    const available=state.availablePoints||0;
+    balanceEl.textContent=available.toLocaleString();
+    const earnedNote=document.getElementById('pointsEarnedNote');
+    if(earnedNote){
+      earnedNote.textContent=(state.redeemedPoints>0)
+        ? `${(state.points||0).toLocaleString()} earned lifetime · ${state.redeemedPoints.toLocaleString()} redeemed`
+        : '';
+    }
 
     listEl.innerHTML=REWARD_EVENTS.map(ev=>{
-      const unlocked=points>=ev.points;
-      const progress=ev.points===0
-        ? 'Open to all members'
-        : unlocked
-          ? '✓ Unlocked'
-          : `${points.toLocaleString()} / ${ev.points.toLocaleString()} pts`;
-      return `<div style="padding:14px;border:1px solid ${unlocked?'var(--brass)':'var(--line-soft)'};border-radius:4px;background:${unlocked?'rgba(196,164,107,.08)':'rgba(0,0,0,.2)'};${unlocked?'':'opacity:.7'};margin-bottom:10px">
+      const signedUp=state.eventSignups.some(s=>s.eventName===ev.name);
+      const unlocked=available>=ev.points;
+      const progress=signedUp
+        ? '✓ You\'re signed up'
+        : ev.points===0
+          ? 'Open to all members'
+          : unlocked
+            ? '✓ Unlocked'
+            : `${available.toLocaleString()} / ${ev.points.toLocaleString()} pts`;
+      let btnHtml;
+      if(signedUp){
+        btnHtml=`<button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px" disabled>✓ Signed Up</button>`;
+      } else if(unlocked){
+        btnHtml=`<button class="btn btn-fill" style="width:100%;font-size:10px;padding:8px" onclick="signUpForEvent('${escJsStr(ev.name)}')">Sign Up</button>`;
+      } else {
+        btnHtml=`<button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Locked</button>`;
+      }
+      return `<div style="padding:14px;border:1px solid ${unlocked||signedUp?'var(--brass)':'var(--line-soft)'};border-radius:4px;background:${unlocked||signedUp?'rgba(196,164,107,.08)':'rgba(0,0,0,.2)'};${unlocked||signedUp?'':'opacity:.7'};margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
           <div>
-            <div style="font-family:var(--display);font-weight:500;font-size:13px;color:${unlocked?'var(--bone)':'var(--bone-dim)'}">${unlocked?'':'🔒 '}${escHtml(ev.name)}</div>
+            <div style="font-family:var(--display);font-weight:500;font-size:13px;color:${unlocked||signedUp?'var(--bone)':'var(--bone-dim)'}">${unlocked||signedUp?'':'🔒 '}${escHtml(ev.name)}</div>
             <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--brass);margin-top:2px">${escHtml(ev.venue)}</div>
           </div>
           <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--bone-dim);text-align:right">
@@ -1280,12 +1336,88 @@
           </div>
         </div>
         <div style="font-family:var(--ui);font-weight:300;font-size:10px;line-height:1.4;color:var(--bone-dim);margin-bottom:10px">${escHtml(ev.desc)}</div>
-        <div style="font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${unlocked?'var(--brass-bright)':'var(--bone-faint)'};margin-bottom:10px">${progress}</div>
-        ${unlocked
-          ? `<button class="btn btn-fill" style="width:100%;font-size:10px;padding:8px">Sign Up</button>`
-          : `<button class="btn btn-ghost" style="width:100%;font-size:10px;padding:8px;opacity:.5" disabled>Locked</button>`}
+        <div style="font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:${unlocked||signedUp?'var(--brass-bright)':'var(--bone-faint)'};margin-bottom:10px">${progress}</div>
+        <div class="body-s" id="signupError-${REWARD_EVENTS.indexOf(ev)}" style="display:none;color:var(--brass);margin-bottom:8px;font-size:10px"></div>
+        ${btnHtml}
       </div>`;
     }).join('');
+  }
+
+  /* redeems points for a private event — writes a permanent, queryable roster
+     entry to the top-level eventSignups collection (not just this member's
+     private data), so it doubles as the "who's coming to event X" log */
+  function signUpForEvent(eventName){
+    const ev=REWARD_EVENTS.find(e=>e.name===eventName);
+    if(!ev || !auth.currentUser) return;
+    if(state.eventSignups.some(s=>s.eventName===eventName)) return; // already signed up
+
+    const idx=REWARD_EVENTS.indexOf(ev);
+    const errEl=document.getElementById('signupError-'+idx);
+    if((state.availablePoints||0) < ev.points){
+      if(errEl){ errEl.textContent="Your balance changed — you no longer have enough points."; errEl.style.display='block'; }
+      renderRewards();
+      return;
+    }
+
+    const signup={
+      eventName: ev.name,
+      uid: auth.currentUser.uid,
+      memberName: auth.currentUser.displayName || auth.currentUser.email,
+      memberNumber: state.memberNumber || '',
+      pointsCost: ev.points,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    db.collection('eventSignups').add(signup)
+      .then(docRef=>{
+        state.eventSignups.push({id:docRef.id, ...signup});
+        renderProfileStats(); // recomputes availablePoints and calls renderRewards()
+      })
+      .catch(err=>{
+        console.error('Failed to sign up for event:', err);
+        if(errEl){ errEl.textContent="Couldn't complete sign-up — please try again."; errEl.style.display='block'; }
+      });
+  }
+
+  /* shows/hides the staff-only nav entry point — the security rules are what actually
+     protect the data; this is just so non-staff don't see a link to a screen they can't use */
+  function renderAdminLink(){
+    const el=document.getElementById('adminLinkBtn');
+    if(el) el.style.display=state.isAdmin ? 'block' : 'none';
+  }
+
+  function renderAdminRoster(){
+    const listEl=document.getElementById('adminRosterList');
+    if(!listEl) return;
+    if(!state.isAdmin){
+      listEl.innerHTML=`<div class="body-s" style="text-align:center;padding:20px 0;color:var(--bone-dim)">Staff access required.</div>`;
+      return;
+    }
+    listEl.innerHTML=`<div class="body-s" style="text-align:center;padding:20px 0;color:var(--bone-dim)">Loading rosters…</div>`;
+    db.collection('eventSignups').get().then(snapshot=>{
+      const byEvent={};
+      snapshot.docs.forEach(doc=>{
+        const d=doc.data();
+        if(!byEvent[d.eventName]) byEvent[d.eventName]=[];
+        byEvent[d.eventName].push(d);
+      });
+      listEl.innerHTML=REWARD_EVENTS.map(ev=>{
+        const members=byEvent[ev.name]||[];
+        const rows=members.length
+          ? members.map(m=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-soft);font-family:var(--ui);font-weight:300;font-size:11px">
+              <span>${escHtml(m.memberName||'Unknown')} <span style="color:var(--bone-faint)">· #${escHtml(m.memberNumber||'—')}</span></span>
+              <span style="color:var(--brass)">${(m.pointsCost||0).toLocaleString()} pts</span>
+            </div>`).join('')
+          : `<div class="body-s" style="color:var(--bone-faint);padding:8px 0">No sign-ups yet.</div>`;
+        return `<div style="margin-bottom:22px">
+          <div style="font-family:var(--display);font-weight:500;font-size:15px;color:var(--bone)">${escHtml(ev.name)}</div>
+          <div style="font-family:var(--ui);font-weight:300;font-size:9px;color:var(--brass);margin:2px 0 8px">${escHtml(ev.venue)} · ${members.length} signed up</div>
+          ${rows}
+        </div>`;
+      }).join('');
+    }).catch(err=>{
+      console.error('Failed to load rosters:', err);
+      listEl.innerHTML=`<div class="body-s" style="text-align:center;padding:20px 0;color:var(--brass)">Couldn't load rosters.</div>`;
+    });
   }
 
   const AUTH_ERROR_MESSAGES={
@@ -1389,7 +1521,7 @@
   });
 
   /* ---------- state ---------- */
-  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, exploreType:'All', exploreNeighborhood:'All' };
+  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All' };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
@@ -1744,11 +1876,12 @@
     ['door','The Door'],['signin','Sign In'],['join','Create Account'],['reset','Reset'],
     ['home','Home'],['explore','Explore'],['venue-checkin','Check In'],['flow-loc','Curate · Location'],
     ['flow-food','Curate · Food'],['flow-drinks','Curate · Drinks'],['flow-pace','Curate · Pace'],
-    ['results','The Itinerary'],['tiers','Tiers'],['events','Events'],['profile','Member Card']
+    ['results','The Itinerary'],['tiers','Tiers'],['events','Events'],['admin-roster','Staff · Rosters'],['profile','Member Card']
   ];
-  const PROTECTED_SCREENS=new Set(['home','explore','venue-checkin','flow-loc','flow-food','flow-drinks','flow-pace','results','tiers','events','profile']);
+  const PROTECTED_SCREENS=new Set(['home','explore','venue-checkin','flow-loc','flow-food','flow-drinks','flow-pace','results','tiers','events','admin-roster','profile']);
   function go(id){
     if(PROTECTED_SCREENS.has(id) && !auth.currentUser){ id='door'; }
+    if(id==='admin-roster' && !state.isAdmin){ id='profile'; } // the security rules are the real gate; this just avoids showing a screen the query will fail on
     document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
     const s=document.getElementById(id); s.classList.add('active');
     const sc=s.querySelector('.scroll'); if(sc) sc.scrollTop=0;
@@ -2253,13 +2386,14 @@
         '<svg viewBox="0 0 22 22" fill="none">'+n.svg+'</svg><span class="lab">'+n.lab+'</span></button>';
     }).join('');
   }
-  ['home','results','explore','profile','events'].forEach(id=>{
+  ['home','results','explore','profile','events','admin-roster'].forEach(id=>{
     const bar=document.getElementById('nav-'+id);
-    if(bar) bar.innerHTML=navHTML(id==='results'?'home':id==='events'?'profile':id);
+    if(bar) bar.innerHTML=navHTML(id==='results'?'home':(id==='events'||id==='admin-roster')?'profile':id);
   });
   function syncNav(id){
     if(id==='results'){ refreshResults(); }
     if(id==='events'){ renderRewards(); }
+    if(id==='admin-roster'){ renderAdminRoster(); }
   }
 
   /* ---------- prototype navigator chips ---------- */
