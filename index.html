@@ -1077,7 +1077,13 @@
           </div>
 
           <button class="btn btn-fill" style="margin-top:24px" onclick="go('events')">View Rewards &amp; Private Events →</button>
-          <button class="btn btn-ghost" id="adminLinkBtn" style="margin-top:12px;display:none" onclick="go('admin-roster')">Staff: View Event Rosters →</button>
+
+          <div id="adminPortal" style="display:none;margin-top:20px;padding:16px;border:1px solid var(--line);border-radius:4px;background:radial-gradient(120% 100% at 50% 0%, rgba(196,164,107,.08), rgba(0,0,0,0) 70%)">
+            <div class="eyebrow">Admin Portal</div>
+            <div class="body-s" style="margin-top:6px;color:var(--bone-dim)">Tools visible only to BLK RAVN staff.</div>
+            <button class="btn btn-ghost" style="margin-top:12px" onclick="go('admin-roster')">View Event Rosters →</button>
+          </div>
+
           <button class="text-link" style="margin:24px auto 0;display:block" onclick="handleSignOut()">Sign out</button>
         </div>
         <div class="navbar" id="nav-profile"></div>
@@ -1381,7 +1387,7 @@
   /* shows/hides the staff-only nav entry point — the security rules are what actually
      protect the data; this is just so non-staff don't see a link to a screen they can't use */
   function renderAdminLink(){
-    const el=document.getElementById('adminLinkBtn');
+    const el=document.getElementById('adminPortal');
     if(el) el.style.display=state.isAdmin ? 'block' : 'none';
   }
 
