@@ -900,6 +900,7 @@
             <div class="seal"><svg width="30" height="27" viewBox="0 0 24 24" fill="none"><path d="M9 16.2L4.8 12m-1 1L9 18 20 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
             <div class="display-l">Checked in.</div>
             <div class="eyebrow" id="venueDonePoints" style="color:var(--brass-bright);margin-top:10px"></div>
+            <div class="body-s" id="venueDoneTierUp" style="margin-top:8px;color:var(--brass);display:none"></div>
             <div class="body-s" style="margin-top:12px;max-width:250px">Keep exploring — every visit and every dollar spent earns you points toward BLK RAVN's private events.</div>
             <button class="btn btn-ghost" style="margin-top:28px;max-width:220px" onclick="go('explore')">Back to explore</button>
           </div>
@@ -1061,7 +1062,7 @@
             <div class="member-card">
               <div class="mc-top">
                 <svg id="markCard" width="34" height="31" viewBox="0 0 66 60" fill="none"><path d="M33 5 L62 55 L4 55 Z" stroke="#E8D0A0" stroke-width="1.1"/><path d="M22 23 L40 55 L4 55 Z" stroke="#E8D0A0" stroke-width="1.1"/><path d="M44 23 L62 55 L26 55 Z" stroke="#E8D0A0" stroke-width="1.1"/></svg>
-                <div style="text-align:right"><div class="mc-name">BLK RAVN</div><div class="mc-tier">Member</div></div>
+                <div style="text-align:right"><div class="mc-name">BLK RAVN</div><div class="mc-tier" id="mcTier">Explorer Member</div></div>
               </div>
               <div class="mc-bottom">
                 <div class="mc-holder">Member<b id="mcName">Member</b></div>
@@ -1098,11 +1099,26 @@
             <div class="body-s" style="margin-top:8px;color:var(--bone-dim)">Every check-in earns points — spend more, earn more. Redeem them for BLK RAVN's most exclusive experiences.</div>
           </div>
 
-          <div style="margin-top:24px;padding:20px;border:1px solid var(--line);border-radius:4px;background:radial-gradient(120% 100% at 50% 0%, rgba(196,164,107,.10), rgba(0,0,0,0) 70%);text-align:center">
+          <div id="tierCard" style="margin-top:24px;padding:18px;border:1px solid var(--brass);border-radius:4px;background:radial-gradient(120% 100% at 50% 0%, rgba(196,164,107,.10), rgba(0,0,0,0) 70%)">
+            <div style="display:flex;justify-content:space-between;align-items:start">
+              <div>
+                <div class="eyebrow">Your tier</div>
+                <div class="display-m" id="tierName" style="margin-top:4px">Explorer</div>
+              </div>
+              <div style="text-align:right">
+                <div class="body-s" id="tierMultiplier" style="color:var(--brass-bright)">1× points</div>
+              </div>
+            </div>
+            <div class="body-s" id="tierAnniversary" style="margin-top:10px;color:var(--bone-dim)"></div>
+            <div class="body-s" id="tierProgress" style="margin-top:6px;color:var(--bone-dim)"></div>
+          </div>
+
+          <div style="margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:4px;background:radial-gradient(120% 100% at 50% 0%, rgba(196,164,107,.10), rgba(0,0,0,0) 70%);text-align:center">
             <div class="eyebrow">Your balance</div>
             <div class="display-xl" id="pointsBalance" style="margin-top:8px">0</div>
             <div class="body-s" style="margin-top:2px;color:var(--bone-dim)">points available</div>
             <div class="body-s" id="pointsEarnedNote" style="margin-top:8px;color:var(--bone-faint);font-size:10px"></div>
+            <div class="body-s" id="pointsExpiringNote" style="margin-top:4px;color:var(--brass);font-size:10px;display:none"></div>
           </div>
 
           <div id="rewardEventsList" style="margin-top:28px"></div>
@@ -1203,15 +1219,27 @@
     userDoc().collection('savedVenues').doc(name).delete()
       .catch(err=>console.error('Failed to unsave venue:', err));
   }
+  /* the tier multiplier applied is whatever tier the member holds AT THE MOMENT
+     of this checkin — earning a tier from this same visit doesn't retroactively
+     boost this visit's own points, only future ones */
   function recordCheckinDoc(venueName, type, amount){
-    if(!auth.currentUser) return;
-    userDoc().collection('checkins').add({
+    if(!auth.currentUser) return Promise.resolve(null);
+    const multiplier=state.currentTierMultiplier||1;
+    const basePoints=POINTS_CONFIG.perCheckin + Math.round((amount||0)*POINTS_CONFIG.perDollarSpent);
+    const pointsAwarded=Math.round(basePoints*multiplier);
+    const now=new Date();
+    const record={
       venueName, type, amount: amount||0,
+      pointsAwarded, tierMultiplierApplied: multiplier, expiresAt: now.getTime()+YEAR_MS,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(()=>{
-      state.checkins.push({venueName, type, amount: amount||0});
-      renderProfileStats();
-    }).catch(err=>console.error('Failed to record check-in:', err));
+    };
+    return userDoc().collection('checkins').add(record).then(()=>{
+      state.checkins.push({...record, timestamp: now});
+      return updateTierStatus().then(advancedTo=>{
+        renderProfileStats();
+        return {pointsAwarded, multiplier, advancedTo};
+      });
+    }).catch(err=>{ console.error('Failed to record check-in:', err); return null; });
   }
   function loadUserData(user){
     userDoc().collection('savedVenues').get()
@@ -1225,19 +1253,23 @@
       })
       .catch(err=>console.error('Failed to load saved venues:', err));
 
-    userDoc().collection('checkins').get()
-      .then(snapshot=>{
-        state.checkins = snapshot.docs.map(doc=>doc.data());
-        renderProfileStats();
-      })
-      .catch(err=>console.error('Failed to load check-ins:', err));
-
-    db.collection('eventSignups').where('uid','==',user.uid).get()
-      .then(snapshot=>{
-        state.eventSignups = snapshot.docs.map(doc=>({id:doc.id, ...doc.data()}));
-        renderProfileStats();
-      })
-      .catch(err=>console.error('Failed to load event signups:', err));
+    /* tiers, checkins, and eventSignups all feed updateTierStatus() together —
+       loaded via Promise.all and rendered once, so a slow tiers fetch can't
+       race a fast checkins fetch into resetting real tier progress (the same
+       class of bug fixed earlier for member-number assignment) */
+    Promise.all([
+      userDoc().get(),
+      userDoc().collection('checkins').get(),
+      db.collection('eventSignups').where('uid','==',user.uid).get()
+    ]).then(([userSnap, checkinsSnap, signupsSnap])=>{
+      const userData=userSnap.exists ? userSnap.data() : {};
+      state.tiers=userData.tiers || null;
+      state.currentTier=userData.currentTier || 'explorer';
+      state.currentTierMultiplier=typeof userData.currentTierMultiplier==='number' ? userData.currentTierMultiplier : 1;
+      state.checkins = checkinsSnap.docs.map(doc=>doc.data());
+      state.eventSignups = signupsSnap.docs.map(doc=>({id:doc.id, ...doc.data()}));
+      renderProfileStats();
+    }).catch(err=>console.error('Failed to load member data:', err));
 
     db.collection('admins').doc(user.uid).get()
       .then(doc=>{
@@ -1252,6 +1284,9 @@
     state.eventSignups = [];
     state.memberNumber = '';
     state.isAdmin = false;
+    state.tiers = null;
+    state.currentTier = 'explorer';
+    state.currentTierMultiplier = 1;
     renderAdminLink();
     renderSavedVenues();
     renderProfileStats();
@@ -1267,20 +1302,171 @@
     checkinsEl.textContent=state.checkins.length;
     venuesEl.textContent=distinctVenues.size;
     spentEl.textContent='$'+totalSpent;
+    const now=Date.now();
+    const THIRTY_DAYS_MS=30*24*60*60*1000;
     state.points=computePoints(state.checkins);
     state.redeemedPoints=computeRedeemedPoints(state.eventSignups);
-    state.availablePoints=Math.max(0, state.points-state.redeemedPoints);
+    state.pointsExpired=state.checkins.reduce((sum,c)=>sum + (checkinExpiresMs(c)<=now ? checkinPoints(c) : 0), 0);
+    state.pointsExpiringSoon=state.checkins.reduce((sum,c)=>{
+      const exp=checkinExpiresMs(c);
+      return sum + (exp>now && exp<=now+THIRTY_DAYS_MS ? checkinPoints(c) : 0);
+    }, 0);
+    state.availablePoints=Math.max(0, state.points-state.pointsExpired-state.redeemedPoints);
     renderRewards();
+    updateTierStatus();
   }
 
   /* ---------- rewards points ---------- */
   /* editable: how many points a member earns per check-in and per dollar spent */
   const POINTS_CONFIG={ perCheckin:10, perDollarSpent:1 };
+  /* checkins recorded before the tier system existed have no pointsAwarded field —
+     fall back to the flat formula so old history still counts correctly */
+  function checkinPoints(c){
+    return typeof c.pointsAwarded==='number' ? c.pointsAwarded
+      : POINTS_CONFIG.perCheckin + Math.round((c.amount||0)*POINTS_CONFIG.perDollarSpent);
+  }
   function computePoints(checkins){
-    return checkins.reduce((sum,c)=>sum + POINTS_CONFIG.perCheckin + Math.round((c.amount||0)*POINTS_CONFIG.perDollarSpent), 0);
+    return checkins.reduce((sum,c)=>sum + checkinPoints(c), 0);
   }
   function computeRedeemedPoints(signups){
     return signups.reduce((sum,s)=>sum+(s.pointsCost||0), 0);
+  }
+
+  /* ---------- annual rolling tier system ----------
+     Explorer is automatic; Collector/VIP/Platinum are earned by crossing a
+     rolling-12-month threshold, then locked for 12 months from the date
+     achieved (an independent "anniversary" per tier). At the anniversary,
+     the member either renews (still meets the threshold in the trailing
+     12 months) or drops to the highest tier they still qualify for.
+     This whole engine runs client-side for now — the daily/weekly checks
+     described in the spec (checkAnniversaries/expireOldPoints) become "run
+     it whenever the member's data loads" instead of a real cron job, which
+     is the intentional tradeoff of not running Cloud Functions yet. */
+  const YEAR_MS = 365*24*60*60*1000;
+  const TIER_ORDER=['explorer','collector','vip','platinum'];
+  const TIER_CONFIG={
+    explorer:  {label:'Explorer',  multiplier:1},
+    collector: {label:'Collector', multiplier:1.5, metric:'points', threshold:200},
+    vip:       {label:'VIP',       multiplier:2,   metric:'spend',  threshold:5000},
+    platinum:  {label:'Platinum',  multiplier:3,   metric:'spend',  threshold:12000}
+  };
+  function checkinTimestampMs(c){
+    if(c.timestamp && typeof c.timestamp.toDate==='function') return c.timestamp.toDate().getTime();
+    if(c.timestamp instanceof Date) return c.timestamp.getTime();
+    return 0;
+  }
+  /* legacy checkins recorded before expiresAt existed are treated as
+     non-expiring rather than silently zeroing out a member's real balance */
+  function checkinExpiresMs(c){
+    if(typeof c.expiresAt==='number') return c.expiresAt;
+    const t=checkinTimestampMs(c);
+    return t ? t+YEAR_MS : Infinity;
+  }
+  function rollingStats(checkins, asOfMs){
+    const windowStart=asOfMs-YEAR_MS;
+    let points=0, spend=0;
+    checkins.forEach(c=>{
+      const t=checkinTimestampMs(c);
+      if(t>=windowStart && t<=asOfMs){ points+=checkinPoints(c); spend+=(c.amount||0); }
+    });
+    return {points, spend};
+  }
+
+  /* recomputes tier status from the member's checkin history and persists any
+     change. Called after every checkin and once on every profile load — the
+     load-time call is what substitutes for a real scheduled anniversary check.
+     Returns the tier key just newly achieved (for a celebration), or null. */
+  function updateTierStatus(){
+    if(!auth.currentUser) return Promise.resolve(null);
+    const now=new Date();
+    const nowMs=now.getTime();
+    const stats=rollingStats(state.checkins, nowMs);
+
+    const tiers=(state.tiers && state.tiers.explorer)
+      ? JSON.parse(JSON.stringify(state.tiers))
+      : {explorer:{achievedDate:now.toISOString(), anniversaryDate:null, status:'active'}};
+    ['collector','vip','platinum'].forEach(key=>{
+      if(!tiers[key]) tiers[key]={achievedDate:null, anniversaryDate:null, status:'not_achieved'};
+    });
+
+    let advancedTo=null;
+    ['collector','vip','platinum'].forEach(key=>{
+      const cfg=TIER_CONFIG[key];
+      const t=tiers[key];
+      const metricValue = cfg.metric==='points' ? stats.points : stats.spend;
+
+      if(t.status!=='active'){
+        if(metricValue>=cfg.threshold){
+          t.achievedDate=now.toISOString();
+          t.anniversaryDate=new Date(nowMs+YEAR_MS).toISOString();
+          t.status='active';
+          advancedTo=key;
+        }
+      } else {
+        const annivMs=new Date(t.anniversaryDate).getTime();
+        if(nowMs>=annivMs){
+          if(metricValue>=cfg.threshold){
+            // renews from the anniversary date itself, not from today
+            t.anniversaryDate=new Date(annivMs+YEAR_MS).toISOString();
+          } else {
+            t.status='not_achieved';
+            t.achievedDate=null;
+            t.anniversaryDate=null;
+          }
+        }
+      }
+    });
+
+    let current='explorer';
+    TIER_ORDER.forEach(key=>{ if(key==='explorer' || tiers[key].status==='active') current=key; });
+    const multiplier=TIER_CONFIG[current].multiplier;
+
+    const changed = JSON.stringify(tiers)!==JSON.stringify(state.tiers||null) || current!==state.currentTier;
+    state.tiers=tiers;
+    state.currentTier=current;
+    state.currentTierMultiplier=multiplier;
+    renderTierCard();
+
+    if(!changed) return Promise.resolve(null);
+    return userDoc().set({tiers, currentTier:current, currentTierMultiplier:multiplier}, {merge:true})
+      .then(()=>advancedTo)
+      .catch(err=>{ console.error('Failed to save tier status:', err); return advancedTo; });
+  }
+
+  function renderTierCard(){
+    const nameEl=document.getElementById('tierName');
+    if(!nameEl) return;
+    const current=state.currentTier||'explorer';
+    const cfg=TIER_CONFIG[current];
+    nameEl.textContent=cfg.label;
+    document.getElementById('tierMultiplier').textContent=cfg.multiplier+'× points';
+
+    const mcTierEl=document.getElementById('mcTier');
+    if(mcTierEl) mcTierEl.textContent=cfg.label+' Member';
+
+    const annivEl=document.getElementById('tierAnniversary');
+    const t=state.tiers && state.tiers[current];
+    if(current!=='explorer' && t && t.anniversaryDate){
+      const days=Math.max(0, Math.ceil((new Date(t.anniversaryDate).getTime()-Date.now())/(24*60*60*1000)));
+      const dateLabel=new Date(t.anniversaryDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      annivEl.textContent=`Renews ${dateLabel} — ${days} day${days===1?'':'s'}`;
+    } else {
+      annivEl.textContent='';
+    }
+
+    const progEl=document.getElementById('tierProgress');
+    const nextKey=TIER_ORDER[TIER_ORDER.indexOf(current)+1];
+    if(nextKey){
+      const nextCfg=TIER_CONFIG[nextKey];
+      const stats=rollingStats(state.checkins, Date.now());
+      const have= nextCfg.metric==='points' ? stats.points : stats.spend;
+      const remaining=Math.max(0, nextCfg.threshold-have);
+      progEl.textContent = remaining>0
+        ? `${nextCfg.metric==='spend'?'$':''}${remaining.toLocaleString()}${nextCfg.metric==='points'?' pts':''} to ${nextCfg.label} (${nextCfg.multiplier}× points)`
+        : `Eligible for ${nextCfg.label} — updates on your next check-in`;
+    } else {
+      progEl.textContent='Top tier reached';
+    }
   }
 
   /* private events gated by points instead of the old fake tier names */
@@ -1311,6 +1497,16 @@
         ? `${(state.points||0).toLocaleString()} earned lifetime · ${state.redeemedPoints.toLocaleString()} redeemed`
         : '';
     }
+    const expiringEl=document.getElementById('pointsExpiringNote');
+    if(expiringEl){
+      if(state.pointsExpiringSoon>0){
+        expiringEl.textContent=`⚠ ${state.pointsExpiringSoon.toLocaleString()} points expire within 30 days`;
+        expiringEl.style.display='block';
+      } else {
+        expiringEl.style.display='none';
+      }
+    }
+    renderTierCard();
 
     listEl.innerHTML=REWARD_EVENTS.map(ev=>{
       const signedUp=state.eventSignups.some(s=>s.eventName===ev.name);
@@ -1527,7 +1723,7 @@
   });
 
   /* ---------- state ---------- */
-  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All' };
+  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All', tiers:null, currentTier:'explorer', currentTierMultiplier:1 };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
@@ -2064,6 +2260,7 @@
             <span style="font-size:18px">✓</span> Checked in at <span data-venue>${escHtml(v.name)}</span>
           </div>
           <div class="body-s" data-points style="margin-top:6px;color:var(--brass-bright)"></div>
+          <div class="body-s" data-tierup style="margin-top:6px;color:var(--brass);display:none"></div>
         </div>
       </div>
     </div>`;
@@ -2295,8 +2492,18 @@
         statusEl.style.display = 'none';
         document.getElementById('venueForm').classList.add('hide');
         document.getElementById('venueDone').classList.add('show');
-        document.getElementById('venueDonePoints').textContent = '+'+POINTS_CONFIG.perCheckin+' points earned';
-        recordCheckinDoc(name, document.getElementById('venueType').textContent, 0);
+        const multiplier=state.currentTierMultiplier||1;
+        const pts=Math.round(POINTS_CONFIG.perCheckin*multiplier);
+        document.getElementById('venueDonePoints').textContent = '+'+pts+' points earned'+(multiplier>1?` (${multiplier}× ${TIER_CONFIG[state.currentTier].label} bonus)`:'');
+        recordCheckinDoc(name, document.getElementById('venueType').textContent, 0).then(result=>{
+          const tierUpEl=document.getElementById('venueDoneTierUp');
+          if(result && result.advancedTo){
+            tierUpEl.textContent=`🎉 You've reached ${TIER_CONFIG[result.advancedTo].label}! Enjoy ${TIER_CONFIG[result.advancedTo].multiplier}× points.`;
+            tierUpEl.style.display='block';
+          } else {
+            tierUpEl.style.display='none';
+          }
+        });
       },
       onTooFar: (dist) => {
         btn.disabled = false;
@@ -2358,7 +2565,7 @@
     item.classList.add('done');
     eveningTotal += amount;
     const venue = VENUES.find(v=>v.name===venueName);
-    recordCheckinDoc(venueName, venue ? venue.type : '', amount);
+    const multiplier=state.currentTierMultiplier||1;
 
     updateProg();
 
@@ -2366,11 +2573,22 @@
     const confirmTitle = confirm.querySelector('[data-venue]');
     if(confirmTitle) confirmTitle.textContent = venueName;
 
-    const pointsEarned = POINTS_CONFIG.perCheckin + Math.round(amount*POINTS_CONFIG.perDollarSpent);
+    const pointsEarned = Math.round((POINTS_CONFIG.perCheckin + Math.round(amount*POINTS_CONFIG.perDollarSpent))*multiplier);
     const pointsText = confirm.querySelector('[data-points]');
-    if(pointsText) pointsText.textContent = '+'+pointsEarned+' points earned';
+    if(pointsText) pointsText.textContent = '+'+pointsEarned+' points earned'+(multiplier>1?` (${multiplier}× ${TIER_CONFIG[state.currentTier].label} bonus)`:'');
 
     confirm.style.display = 'block';
+
+    recordCheckinDoc(venueName, venue ? venue.type : '', amount).then(result=>{
+      const tierUpEl=confirm.querySelector('[data-tierup]');
+      if(!tierUpEl) return;
+      if(result && result.advancedTo){
+        tierUpEl.textContent=`🎉 You've reached ${TIER_CONFIG[result.advancedTo].label}! Enjoy ${TIER_CONFIG[result.advancedTo].multiplier}× points.`;
+        tierUpEl.style.display='block';
+      } else {
+        tierUpEl.style.display='none';
+      }
+    });
     }
   }
 
