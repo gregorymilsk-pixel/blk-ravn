@@ -884,6 +884,7 @@
             <div class="res-summary" id="resSummary">
               <span class="pill">Steakhouse</span><span class="pill">Old Fashioned</span><span class="pill">3 stops</span>
             </div>
+            <div class="body-s" style="margin-top:12px;color:var(--bone-faint);font-size:11px;line-height:1.55">Times are estimated from your location and an easy walking pace — a suggested flow for the night, not reservations. Call ahead for anything you'd like to lock in.</div>
           </div>
 
           <div class="map">
@@ -2153,6 +2154,12 @@
       : 'Ready to discover something new today?';
   }
   updateGreeting();
+  /* the location step's headline follows the same clock — "tonight" only after 5pm */
+  function updateLocTitle(){
+    const el=document.querySelector('#flow-loc .display-l');
+    if(el) el.innerHTML='Where are you<br>'+(partOfDay()==='evening'?'tonight?':'today?');
+  }
+  updateLocTitle();
 
   /* Venue settings the member can steer toward. Each maps to a matcher (below) so
      the itinerary engine prefers venues that fit the chosen vibe. Settings without
@@ -2284,6 +2291,14 @@
     if(close<=open) close+=24*60; // spans past midnight
     return mins>=open && mins<=close;
   }
+  function nowMinutes(){ const d=new Date(); return d.getHours()*60 + d.getMinutes(); }
+  function minutesToClock(m){
+    m=((Math.round(m)%1440)+1440)%1440; // wrap within a day
+    let h=Math.floor(m/60), min=m%60;
+    const ampm=h<12?'AM':'PM';
+    h=h%12; if(h===0) h=12;
+    return h+':'+String(min).padStart(2,'0')+' '+ampm;
+  }
 
   function buildItinerary(){
     const meal = MEAL_PLANS[state.meal] ? state.meal : 'dinner';
@@ -2291,19 +2306,28 @@
     const foodKeys=[...state.food], drinkKeys=[...state.drinks];
     const styleKeys=[...state.venueTypes]; // venue-style preferences (soft scoring boost)
     const hoursIdx=hoursIndexForToday();
+    // Times are estimated live from the member's current clock, walking pace and time spent per stop.
+    const MEAL_START={breakfast:7*60+30, lunch:12*60, dinner:18*60}; // natural earliest start when planning ahead
+    const DWELL={coffee:40, food:90, drink:60};                      // minutes typically spent at each stop
+    const WALK_MPH=3;                                                // ~20 min per mile on foot
+    let clock=Math.max(nowMinutes(), MEAL_START[meal]||0);           // start now, unless the meal is still ahead
     const used=new Set();
     const stops=[];
     let refLat=USER_LOCATION.lat, refLon=USER_LOCATION.lon;
     plan.forEach(slot=>{
-      const openCtx={mins:parseClock(slot.time), hoursIdx};
+      const openCtx={mins:clock, hoursIdx};
       const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, null, styleKeys, openCtx);
       if(!pick) return;
       used.add(pick.venue.name);
+      const walkMin=Math.max(1, Math.round((pick.dist/WALK_MPH)*60)); // from the member (first stop) or the previous venue
+      clock+=walkMin;                                                 // arrival time at this stop
+      const timeStr=minutesToClock(clock);
       let why = pick.matched.length
         ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
         : (slot.role==='food' ? 'Hand-picked for your table.' : slot.role==='coffee' ? 'A local favorite for coffee and pastries.' : 'Hand-picked to open the outing.');
       if(!pick.withinRadius) why += ' Closest match — just outside your '+state.radius+' mi radius.';
-      stops.push({...slot, venue:pick.venue, why});
+      stops.push({...slot, time:timeStr, walkMin, venue:pick.venue, why});
+      clock+=DWELL[slot.role]||60;                                    // time spent here before the next leg
       refLat=pick.venue.lat; refLon=pick.venue.lon;
     });
     return stops;
@@ -2327,6 +2351,7 @@
     if(id==='reset') resetDone('reset');
     if(id==='venue-checkin') resetDone('venue');
     if(id==='home') updateGreeting();
+    if(id==='flow-loc') updateLocTitle();
     if(id==='flow-loc' || id==='explore' || id==='results') requestGeolocation();
     if(id==='flow-loc' || id==='results') startLiveTracking(); else stopLiveTracking();
     if(id==='flow-loc') renderLocMap();
@@ -2498,7 +2523,7 @@
       <div class="tl-node"><span class="num">${index+1}</span><svg class="check" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="#1a140c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div class="tl-card">
         <button class="heart-btn" onclick="event.stopPropagation(); toggleCardHeart(this, '${escJsStr(v.name)}')">♡</button>
-        <div class="time">${stop.time} · ${escHtml(stop.course)}</div>
+        <div class="time">${stop.time} · ${escHtml(stop.course)}${stop.walkMin!=null ? ' · '+stop.walkMin+' min walk'+(index===0?' from you':'') : ''}</div>
         <h4>${escHtml(v.name)}</h4>
         <div class="type">${escHtml(v.type)} · ${escHtml(v.neighborhood)}</div>
         ${priceDressLabel(v) ? `<div class="type" style="color:var(--brass);margin-top:2px">${escHtml(priceDressLabel(v))}</div>` : ''}
