@@ -952,28 +952,38 @@
       <section class="screen" id="tiers">
         <div class="scroll fadein">
           <div>
-            <div class="eyebrow">Four levels.</div>
-            <div class="display-l">More to discover.</div>
-            <div class="body-s" style="margin-top:8px;color:var(--bone-dim)">Each tier brings new exclusive rewards and private events.</div>
+            <div class="eyebrow">Membership tiers</div>
+            <div class="display-l">The full program.</div>
+            <div class="body-s" style="margin-top:8px;color:var(--bone-dim)">How points, tiers, and multipliers work — in detail.</div>
+          </div>
+
+          <!-- HOW POINTS ARE EARNED -->
+          <div style="margin-top:24px;padding:18px;border:1px solid var(--line);border-radius:4px">
+            <div class="eyebrow">How you earn</div>
+            <div class="body-s" style="margin-top:10px;color:var(--bone-dim);line-height:1.6">
+              <b style="color:var(--bone)">+10 points</b> for every check-in, plus <b style="color:var(--bone)">+1 point per $1</b> spent at the venue.<br>
+              Your current tier's multiplier is applied automatically the moment you earn — no need to redeem or activate anything.<br>
+              Points expire <b style="color:var(--bone)">12 months</b> after they're earned.
+            </div>
           </div>
 
           <!-- PROGRESS TO NEXT TIER -->
-          <div style="margin-top:24px;padding:18px;border:1px solid var(--line);border-radius:4px;background:rgba(196,164,107,.06)">
+          <div id="tierDetailProgressCard" style="margin-top:16px;padding:18px;border:1px solid var(--line);border-radius:4px;background:rgba(196,164,107,.06)">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
               <div style="font-family:var(--ui);font-weight:300;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim)">Your progress</div>
-              <div style="font-family:var(--display);font-weight:500;font-size:16px">Insider</div>
+              <div id="tierDetailCurrentName" style="font-family:var(--display);font-weight:500;font-size:16px">Explorer</div>
             </div>
             <div style="height:4px;background:var(--line-soft);border-radius:2px;margin-bottom:12px">
-              <div style="height:100%;width:60%;background:var(--brass);border-radius:2px"></div>
+              <div id="tierDetailBar" style="height:100%;width:0%;background:var(--brass);border-radius:2px"></div>
             </div>
-            <div style="font-family:var(--ui);font-weight:300;font-size:10px;color:var(--bone-dim)">6 check-ins or $340 spend to Elite</div>
+            <div id="tierDetailNote" style="font-family:var(--ui);font-weight:300;font-size:10px;color:var(--bone-dim)"></div>
           </div>
 
           <!-- TIER CARDS -->
           <div style="margin-top:28px">
 
             <!-- EXPLORER — compass in circle -->
-            <div class="tier">
+            <div class="tier" data-tier="explorer">
               <svg class="emblem" viewBox="0 0 64 64" fill="none">
                 <circle cx="32" cy="32" r="23" stroke="currentColor" stroke-width="1.1"/>
                 <circle cx="32" cy="32" r="18" stroke="currentColor" stroke-width="1.1" opacity=".5"/>
@@ -983,54 +993,56 @@
               </svg>
               <div class="t">
                 <h4>Explorer</h4>
-                <div class="lvl">Level 01</div>
+                <div class="lvl">Level 01 · 1× points</div>
                 <div class="tier-rule"></div>
                 <div class="desc">
-                  <div class="desc-title">Your journey begins.</div>
-                  <div class="desc-text">Access to curated city experiences and exceptional recommendations hand selected by BLK RAVN.</div>
+                  <div class="desc-title">Automatic at signup.</div>
+                  <div class="desc-text">Every member starts here — 1× points on every check-in and every dollar spent, plus access to curated recommendations and open-to-all events.</div>
                 </div>
               </div>
+              <span class="badge" style="display:none">You're here</span>
             </div>
 
-            <!-- INSIDER — key in octagon -->
-            <div class="tier cur">
+            <!-- COLLECTOR — key in octagon -->
+            <div class="tier" data-tier="collector">
               <svg class="emblem" viewBox="0 0 64 64" fill="none">
                 <path d="M22 11h20l13 13v20l-13 13H22L9 44V24z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
                 <circle cx="32" cy="26" r="5" stroke="currentColor" stroke-width="1.1"/>
                 <path d="M32 31v15M32 41h5M32 37h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
               </svg>
               <div class="t">
-                <h4>Insider</h4>
-                <div class="lvl">Level 02</div>
+                <h4>Collector</h4>
+                <div class="lvl">Level 02 · 1.5× points</div>
                 <div class="tier-rule"></div>
                 <div class="desc">
-                  <div class="desc-title">Go beyond the ordinary.</div>
-                  <div class="desc-text">Unlock access to private member only mixers and exclusive social experiences in your city.</div>
+                  <div class="desc-title">200 points in a rolling year.</div>
+                  <div class="desc-text">Earn 200+ points from check-ins and spend within any trailing 12 months to unlock Collector — 1.5× points, locked in for a full year from the day you reach it.</div>
                 </div>
               </div>
-              <span class="badge">You're here</span>
+              <span class="badge" style="display:none">You're here</span>
             </div>
 
-            <!-- ELITE — compass star in shield -->
-            <div class="tier">
+            <!-- VIP — compass star in shield -->
+            <div class="tier" data-tier="vip">
               <svg class="emblem" viewBox="0 0 64 64" fill="none">
                 <path d="M16 16h32v26c0 4-4 6-16 12-12-6-16-8-16-12z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
                 <path d="M32 22l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
                 <path d="M32 28l1.5 4.5L38 34l-4.5 1.5L32 40l-1.5-4.5L26 34l4.5-1.5z" fill="currentColor" opacity=".25"/>
               </svg>
               <div class="t">
-                <h4>Elite</h4>
-                <div class="lvl">Level 03</div>
+                <h4>VIP</h4>
+                <div class="lvl">Level 03 · 2× points</div>
                 <div class="tier-rule"></div>
                 <div class="desc">
-                  <div class="desc-title">Live exceptionally.</div>
-                  <div class="desc-text">Unlock private tastings, luxury brand collaborations, exclusive chef experiences and intimate events at the city's most sought after venues.</div>
+                  <div class="desc-title">$5,000 spent in a rolling year.</div>
+                  <div class="desc-text">Cross $5,000 in venue spend within any trailing 12 months to unlock VIP — 2× points, plus priority access to BLK RAVN's private events.</div>
                 </div>
               </div>
+              <span class="badge" style="display:none">You're here</span>
             </div>
 
-            <!-- FOUNDER'S CIRCLE — crown with laurel in circle -->
-            <div class="tier">
+            <!-- PLATINUM — crown with laurel in circle -->
+            <div class="tier" data-tier="platinum">
               <svg class="emblem" viewBox="0 0 64 64" fill="none">
                 <circle cx="32" cy="32" r="23" stroke="currentColor" stroke-width="1.1"/>
                 <path d="M24 36l-3-9 5 4 4-7 4 7 5-4-3 9z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
@@ -1039,16 +1051,27 @@
                 <path d="M42 42c3-1 5-3 6-6M42 45c4-1 6-4 7-8" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity=".7"/>
               </svg>
               <div class="t">
-                <h4>Founder's Circle</h4>
-                <div class="lvl">Level 04</div>
+                <h4>Platinum</h4>
+                <div class="lvl">Level 04 · 3× points</div>
                 <div class="tier-rule"></div>
                 <div class="desc">
-                  <div class="desc-title">Reserved for the extraordinary.</div>
-                  <div class="desc-text">The highest level of BLK RAVN membership. Enjoy unparalleled access to once-in-a-lifetime experiences around the world.</div>
+                  <div class="desc-title">$12,000 spent in a rolling year.</div>
+                  <div class="desc-text">BLK RAVN's highest tier. Cross $12,000 in venue spend within any trailing 12 months to unlock Platinum — 3× points and access to once-in-a-lifetime experiences.</div>
                 </div>
               </div>
+              <span class="badge" style="display:none">You're here</span>
             </div>
 
+          </div>
+
+          <!-- GOOD TO KNOW -->
+          <div style="margin-top:8px;padding:18px;border:1px solid var(--line);border-radius:4px">
+            <div class="eyebrow">Good to know</div>
+            <div class="body-s" style="margin-top:10px;color:var(--bone-dim);line-height:1.6">
+              Each tier has its <b style="color:var(--bone)">own independent anniversary date</b> — the day you earn it. Reaching Collector doesn't reset your VIP clock, and vice versa.<br><br>
+              A tier is <b style="color:var(--bone)">locked for 12 months</b> once earned — no mid-year demotions. At your anniversary, we check your trailing 12-month activity: still qualify, and the tier renews for another year. Fall short, and you settle back to the highest tier you still qualify for.<br><br>
+              Redeem points for private events any time from the <a href="#" onclick="go('events');return false" style="color:var(--brass-bright)">Rewards page</a>.
+            </div>
           </div>
         </div>
         <div class="navbar" id="nav-tiers"></div>
@@ -1097,6 +1120,7 @@
             <div class="eyebrow">Your rewards</div>
             <div class="display-l">Points &amp;<br>Private Events</div>
             <div class="body-s" style="margin-top:8px;color:var(--bone-dim)">Every check-in earns points — spend more, earn more. Redeem them for BLK RAVN's most exclusive experiences.</div>
+            <a href="#" onclick="go('tiers');return false" class="text-link" style="margin-top:6px;display:inline-block">Full program details →</a>
           </div>
 
           <div id="tierCard" style="margin-top:24px;padding:18px;border:1px solid var(--brass);border-radius:4px;background:radial-gradient(120% 100% at 50% 0%, rgba(196,164,107,.10), rgba(0,0,0,0) 70%)">
@@ -1467,6 +1491,40 @@
     } else {
       progEl.textContent='Top tier reached';
     }
+  }
+
+  /* populates the full "Membership tiers" detail screen — progress bar/note,
+     and which tier card + badge is highlighted as the member's current one */
+  function renderTierDetailsScreen(){
+    const nameEl=document.getElementById('tierDetailCurrentName');
+    if(!nameEl) return;
+    const current=state.currentTier||'explorer';
+    nameEl.textContent=TIER_CONFIG[current].label;
+
+    const stats=rollingStats(state.checkins, Date.now());
+    const nextKey=TIER_ORDER[TIER_ORDER.indexOf(current)+1];
+    const barEl=document.getElementById('tierDetailBar');
+    const noteEl=document.getElementById('tierDetailNote');
+    if(nextKey){
+      const nextCfg=TIER_CONFIG[nextKey];
+      const have= nextCfg.metric==='points' ? stats.points : stats.spend;
+      const pct=Math.max(0, Math.min(100, Math.round((have/nextCfg.threshold)*100)));
+      barEl.style.width=pct+'%';
+      const remaining=Math.max(0, nextCfg.threshold-have);
+      noteEl.textContent = remaining>0
+        ? `${nextCfg.metric==='spend'?'$':''}${remaining.toLocaleString()}${nextCfg.metric==='points'?' pts':''} to ${nextCfg.label} (${nextCfg.multiplier}× points)`
+        : `Eligible for ${nextCfg.label} — updates on your next check-in`;
+    } else {
+      barEl.style.width='100%';
+      noteEl.textContent='Top tier reached';
+    }
+
+    document.querySelectorAll('.tier[data-tier]').forEach(card=>{
+      const isCurrent=card.dataset.tier===current;
+      card.classList.toggle('cur', isCurrent);
+      const badge=card.querySelector('.badge');
+      if(badge) badge.style.display=isCurrent?'':'none';
+    });
   }
 
   /* private events gated by points instead of the old fake tier names */
@@ -2610,14 +2668,15 @@
         '<svg viewBox="0 0 22 22" fill="none">'+n.svg+'</svg><span class="lab">'+n.lab+'</span></button>';
     }).join('');
   }
-  ['home','results','explore','profile','events','admin-roster'].forEach(id=>{
+  ['home','results','explore','profile','events','admin-roster','tiers'].forEach(id=>{
     const bar=document.getElementById('nav-'+id);
-    if(bar) bar.innerHTML=navHTML(id==='results'?'home':(id==='events'||id==='admin-roster')?'profile':id);
+    if(bar) bar.innerHTML=navHTML(id==='results'?'home':(id==='events'||id==='admin-roster'||id==='tiers')?'profile':id);
   });
   function syncNav(id){
     if(id==='results'){ refreshResults(); }
     if(id==='events'){ renderRewards(); }
     if(id==='admin-roster'){ renderAdminRoster(); }
+    if(id==='tiers'){ renderTierDetailsScreen(); }
   }
 
   /* ---------- prototype navigator chips ---------- */
