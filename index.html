@@ -739,8 +739,8 @@
         <div class="scroll">
           <div class="flow-top">
             <button class="back" onclick="go('home')">‹</button>
-            <div class="progress"><span class="done"></span><span></span><span></span><span></span></div>
-            <span class="step-num">01 / 04</span>
+            <div class="progress"><span class="done"></span><span></span><span></span><span></span><span></span></div>
+            <span class="step-num">01 / 05</span>
           </div>
           <div class="eyebrow flow-q">Where your moment begins</div>
           <div class="display-l">Where are you<br>tonight?</div>
@@ -770,57 +770,74 @@
           </div>
         </div>
         <div class="flow-foot">
-          <button class="btn btn-fill" onclick="go('flow-food')">Continue →</button>
+          <button class="btn btn-fill" onclick="go('flow-venue')">Continue →</button>
         </div>
       </section>
 
-      <!-- ============ FLOW 2 — FOOD ============ -->
-      <section class="screen" id="flow-food">
+      <!-- ============ FLOW 2 — VENUE STYLE ============ -->
+      <section class="screen" id="flow-venue">
         <div class="scroll">
           <div class="flow-top">
             <button class="back" onclick="go('flow-loc')">‹</button>
-            <div class="progress"><span class="done"></span><span class="done"></span><span></span><span></span></div>
-            <span class="step-num">02 / 04</span>
+            <div class="progress"><span class="done"></span><span class="done"></span><span></span><span></span><span></span></div>
+            <span class="step-num">02 / 05</span>
           </div>
-          <div class="eyebrow flow-q">The table</div>
-          <div class="display-l">What are you<br>hungry for?</div>
-          <div class="body-s flow-sub" style="margin-top:10px">Choose as many as you like. We'll build the dinner around your craving.</div>
-          <div class="chip-grid" id="foodChips"></div>
+          <div class="eyebrow flow-q">The setting</div>
+          <div class="display-l">What's your<br>kind of place?</div>
+          <div class="body-s flow-sub" style="margin-top:10px">Pick the settings you're after — choose as many as you like, or skip and let us surprise you.</div>
+          <div class="chip-grid" id="venueStyleChips"></div>
         </div>
-        <div class="flow-foot">
-          <button class="btn btn-fill" onclick="go('flow-drinks')">Continue →</button>
+        <div class="flow-foot" style="display:flex;gap:12px">
+          <button class="btn btn-ghost" style="width:auto;flex:none;padding-left:26px;padding-right:26px" onclick="skipStep('flow-food','venueStyles')">Skip</button>
+          <button class="btn btn-fill" style="flex:1" onclick="go('flow-food')">Continue →</button>
         </div>
       </section>
 
-      <!-- ============ FLOW 3 — DRINKS ============ -->
+      <!-- ============ FLOW 3 — FOOD ============ -->
+      <section class="screen" id="flow-food">
+        <div class="scroll">
+          <div class="flow-top">
+            <button class="back" onclick="go('flow-venue')">‹</button>
+            <div class="progress"><span class="done"></span><span class="done"></span><span class="done"></span><span></span><span></span></div>
+            <span class="step-num">03 / 05</span>
+          </div>
+          <div class="eyebrow flow-q">The table</div>
+          <div class="display-l">What are you<br>hungry for?</div>
+          <div class="body-s flow-sub" style="margin-top:10px">Choose as many as you like, or skip — we'll build the dinner around your craving.</div>
+          <div class="chip-grid" id="foodChips"></div>
+        </div>
+        <div class="flow-foot" style="display:flex;gap:12px">
+          <button class="btn btn-ghost" style="width:auto;flex:none;padding-left:26px;padding-right:26px" onclick="skipStep('flow-drinks','food')">Skip</button>
+          <button class="btn btn-fill" style="flex:1" onclick="go('flow-drinks')">Continue →</button>
+        </div>
+      </section>
+
+      <!-- ============ FLOW 4 — DRINKS ============ -->
       <section class="screen" id="flow-drinks">
         <div class="scroll">
           <div class="flow-top">
             <button class="back" onclick="go('flow-food')">‹</button>
-            <div class="progress"><span class="done"></span><span class="done"></span><span class="done"></span><span></span></div>
-            <span class="step-num">03 / 04</span>
+            <div class="progress"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span><span></span></div>
+            <span class="step-num">04 / 05</span>
           </div>
           <div class="eyebrow flow-q">The pour</div>
           <div class="display-l">And to<br>drink?</div>
-          <div class="body-s flow-sub" style="margin-top:10px">Your taste sets the bars we send you to — and what they'll have ready.</div>
+          <div class="body-s flow-sub" style="margin-top:10px">Your taste sets the bars we send you to — or skip, and we'll pour to the mood.</div>
           <div class="chip-grid" id="drinkChips"></div>
-
-          <div class="eyebrow" style="margin-top:28px">Venue style <span style="color:var(--bone-faint);text-transform:none;letter-spacing:0">(optional)</span></div>
-          <div class="body-s" style="color:var(--bone-dim);margin:6px 0 14px">Pick specific venue types to work into your night — we'll mix in one of each if you choose more than one.</div>
-          <div class="chip-grid" id="venueTypeChips"></div>
         </div>
-        <div class="flow-foot">
-          <button class="btn btn-fill" onclick="go('flow-pace')">Continue →</button>
+        <div class="flow-foot" style="display:flex;gap:12px">
+          <button class="btn btn-ghost" style="width:auto;flex:none;padding-left:26px;padding-right:26px" onclick="skipStep('flow-pace','drinks')">Skip</button>
+          <button class="btn btn-fill" style="flex:1" onclick="go('flow-pace')">Continue →</button>
         </div>
       </section>
 
-      <!-- ============ FLOW 4 — PACE ============ -->
+      <!-- ============ FLOW 5 — PACE ============ -->
       <section class="screen" id="flow-pace">
         <div class="scroll">
           <div class="flow-top">
             <button class="back" onclick="go('flow-drinks')">‹</button>
-            <div class="progress"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span></div>
-            <span class="step-num">04 / 04</span>
+            <div class="progress"><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span><span class="done"></span></div>
+            <span class="step-num">05 / 05</span>
           </div>
           <div class="eyebrow flow-q">The tempo</div>
           <div class="display-l">How should the<br>night unfold?</div>
@@ -1995,10 +2012,17 @@
   /* cuisine, not dish — most fine-dining venues share near-identical dish tags
      (steak/seafood/vegetarian/gluten_free), so cuisine is the dimension that
      actually discriminates between restaurants */
+  /* San Diego-first ordering — seafood ranks high locally. Each option maps to the
+     underlying venue food tags it should match (European folds in Italian/French/Med). */
   const FOODS=[
-    {key:'american',label:'American'},{key:'italian',label:'Italian'},{key:'mexican',label:'Mexican'},
-    {key:'french',label:'French'},{key:'mediterranean',label:'Mediterranean'},{key:'asian',label:'Asian'}
+    {key:'american',label:'American',    match:['american','burgers']},
+    {key:'seafood', label:'Seafood',     match:['seafood','oysters']},
+    {key:'mexican', label:'Mexican',     match:['mexican','tacos']},
+    {key:'asian',   label:'Asian',       match:['asian','sushi','wagyu']},
+    {key:'european',label:'European',    match:['italian','french','mediterranean','pasta','pizza']},
+    {key:'bar_food',label:'Bar Food',    match:['burgers','tacos','pizza']}
   ];
+  const FOOD_MATCH={}; FOODS.forEach(f=>{ FOOD_MATCH[f.key]=f.match||[f.key]; });
   const DRINKS=[
     {key:'cocktails',label:'Cocktails'},{key:'old_fashioned',label:'Old Fashioned'},
     {key:'espresso_martini',label:'Espresso Martini'},{key:'margarita',label:'Margarita'},
@@ -2042,12 +2066,39 @@
   buildChips('foodChips',FOODS,state.food);
   buildChips('drinkChips',DRINKS,state.drinks);
 
-  const VENUE_TYPE_OPTIONS=[
-    {key:'Cocktail Bar',label:'Cocktail Bar'},
-    {key:'Wine Bar',label:'Wine Bar'},
-    {key:'Brewery',label:'Brewery'}
+  /* Venue settings the member can steer toward. Each maps to a matcher (below) so
+     the itinerary engine prefers venues that fit the chosen vibe. Settings without
+     dedicated venue data yet still record the preference and nudge scoring wherever
+     a venue qualifies. Stored in state.venueTypes (style keys). */
+  const VENUE_STYLES=[
+    {key:'casual',    label:'Casual neighborhood spot'},
+    {key:'fine',      label:'Upscale fine dining'},
+    {key:'waterfront',label:'Waterfront'},
+    {key:'rooftop',   label:'Rooftop'},
+    {key:'cocktail',  label:'Cocktail bar'},
+    {key:'brewery',   label:'Brewery'},
+    {key:'winery',    label:'Winery'},
+    {key:'speakeasy', label:'Speakeasy'},
+    {key:'coffee',    label:'Coffee shop'}
   ];
-  buildChips('venueTypeChips',VENUE_TYPE_OPTIONS,state.venueTypes);
+  buildChips('venueStyleChips',VENUE_STYLES,state.venueTypes);
+
+  /* true when a venue fits a chosen setting — by type, name, or menu tags */
+  function venueMatchesStyle(v, styleKey){
+    const name=(v.name||'').toLowerCase();
+    switch(styleKey){
+      case 'casual':    return v.type==='Casual Dining';
+      case 'fine':      return v.type==='Fine Dining';
+      case 'cocktail':  return v.type==='Cocktail Bar';
+      case 'brewery':   return v.type==='Brewery';
+      case 'winery':    return v.type==='Wine Bar';
+      case 'rooftop':   return /rooftop/.test(name);
+      case 'speakeasy': return /noble experiment|false idol|speakeasy|prohibition/.test(name);
+      case 'waterfront':return (v.food&&(v.food.includes('seafood')||v.food.includes('oysters')))||/bay|wharf|pier|water|fish|harbor|coast|ocean/.test(name);
+      case 'coffee':    return v.drink&&(v.drink.includes('coffee')||v.drink.includes('espresso'));
+      default: return false;
+    }
+  }
 
   /* ---------- neighborhood grid (real data, real counts) ---------- */
   function renderNeighGrid(){
@@ -2066,18 +2117,22 @@
   const DRINK_VENUE_TYPES=['Cocktail Bar','Wine Bar','Brewery'];
   const FOOD_VENUE_TYPES=['Fine Dining','Casual Dining'];
 
-  function scoreVenue(v, foodKeys, drinkKeys, neighborhood){
+  function scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys){
     let score=0;
     const matched=[];
-    foodKeys.forEach(k=>{ if(v.food.includes(k)){ score+=2; matched.push(k); } });
+    foodKeys.forEach(k=>{
+      const tags=FOOD_MATCH[k]||[k];
+      if(tags.some(t=>v.food.includes(t))){ score+=2; matched.push(k); }
+    });
     drinkKeys.forEach(k=>{ if(v.drink.includes(k)){ score+=2; matched.push(k); } });
     if(neighborhood && v.neighborhood===neighborhood) score+=3;
+    if(styleKeys) styleKeys.forEach(sk=>{ if(venueMatchesStyle(v,sk)) score+=3; });
     return {score, matched};
   }
 
   /* picks the best-matching venue for a role ('food' or 'drink'), excluding names already used.
      refLat/refLon anchor the radius — the previous stop for chaining, or the member's location for the first stop. */
-  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius, allowedTypes){
+  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius, allowedTypes, styleKeys){
     const types = (allowedTypes && allowedTypes.length) ? allowedTypes : (role==='food' ? FOOD_VENUE_TYPES : DRINK_VENUE_TYPES);
     let candidates = VENUES.filter(v=>types.includes(v.type) && !usedNames.has(v.name));
     if(candidates.length===0) return null;
@@ -2089,7 +2144,7 @@
 
     let best=null, bestScore=-1, bestMatched=[], bestDist=Infinity;
     pool.forEach(({v,dist})=>{
-      const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood);
+      const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys);
       if(score>bestScore || (score===bestScore && dist<bestDist)){
         best=v; bestScore=score; bestMatched=matched; bestDist=dist;
       }
@@ -2106,21 +2161,14 @@
   function buildItinerary(){
     const plan = PACE_PLANS[state.pace] || PACE_PLANS[3];
     const foodKeys=[...state.food], drinkKeys=[...state.drinks];
-    const selectedVenueTypes=[...state.venueTypes];
+    const styleKeys=[...state.venueTypes]; // venue-style preferences (soft scoring boost)
     const used=new Set();
-    const usedDrinkTypes=new Set();
     const stops=[];
     let refLat=USER_LOCATION.lat, refLon=USER_LOCATION.lon;
     plan.forEach(slot=>{
-      let allowedTypes=null;
-      if(slot.role==='drink' && selectedVenueTypes.length){
-        const remaining=selectedVenueTypes.filter(t=>!usedDrinkTypes.has(t));
-        allowedTypes = remaining.length ? remaining : selectedVenueTypes; // diversify first, then allow repeats
-      }
-      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, allowedTypes);
+      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, null, styleKeys);
       if(!pick) return;
       used.add(pick.venue.name);
-      if(slot.role==='drink') usedDrinkTypes.add(pick.venue.type);
       let why = pick.matched.length
         ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
         : (slot.role==='food' ? 'Hand-picked for tonight’s table.' : 'Hand-picked to open your night.');
@@ -2135,10 +2183,10 @@
   const SCREENS=[
     ['door','The Door'],['signin','Sign In'],['join','Create Account'],['reset','Reset'],
     ['home','Home'],['explore','Explore'],['venue-checkin','Check In'],['flow-loc','Curate · Location'],
-    ['flow-food','Curate · Food'],['flow-drinks','Curate · Drinks'],['flow-pace','Curate · Pace'],
+    ['flow-venue','Curate · Setting'],['flow-food','Curate · Food'],['flow-drinks','Curate · Drinks'],['flow-pace','Curate · Pace'],
     ['results','The Itinerary'],['tiers','Tiers'],['events','Events'],['admin-roster','Staff · Rosters'],['profile','Member Card']
   ];
-  const PROTECTED_SCREENS=new Set(['home','explore','venue-checkin','flow-loc','flow-food','flow-drinks','flow-pace','results','tiers','events','admin-roster','profile']);
+  const PROTECTED_SCREENS=new Set(['home','explore','venue-checkin','flow-loc','flow-venue','flow-food','flow-drinks','flow-pace','results','tiers','events','admin-roster','profile']);
   function go(id){
     if(PROTECTED_SCREENS.has(id) && !auth.currentUser){ id='door'; }
     if(id==='admin-roster' && !state.isAdmin){ id='profile'; } // the security rules are the real gate; this just avoids showing a screen the query will fail on
@@ -2155,6 +2203,14 @@
     syncNav(id);
   }
   function startFlow(){ go('flow-loc'); }
+
+  /* skip a curate step — clears that step's selections, then advances */
+  function skipStep(nextId, which){
+    if(which==='food'){ state.food.clear(); buildChips('foodChips',FOODS,state.food); }
+    else if(which==='drinks'){ state.drinks.clear(); buildChips('drinkChips',DRINKS,state.drinks); }
+    else if(which==='venueStyles'){ state.venueTypes.clear(); buildChips('venueStyleChips',VENUE_STYLES,state.venueTypes); }
+    go(nextId);
+  }
 
   /* ---------- auth helpers ---------- */
   function togglePw(id,btn){
