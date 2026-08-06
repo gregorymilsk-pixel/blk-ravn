@@ -325,6 +325,18 @@
   .chip .tick{width:14px;height:14px;display:none}
   .chip.sel .tick{display:block}
 
+  /* meal type — segmented control for the food step */
+  .meal-seg{display:flex;margin-top:12px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--raven-card)}
+  .meal-seg .meal{flex:1;text-align:center;padding:15px 6px 14px;cursor:pointer;transition:.28s ease;user-select:none}
+  .meal-seg .meal + .meal{border-left:1px solid var(--line)}
+  .meal-seg .meal .m-name{font-family:var(--display);font-weight:500;font-size:17px;letter-spacing:.01em;color:var(--bone);line-height:1;transition:.28s}
+  .meal-seg .meal .m-time{display:block;margin-top:5px;font-family:var(--ui);font-weight:400;font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--bone-faint);transition:.28s}
+  .meal-seg .meal:not(.sel):hover{background:rgba(196,164,107,.06)}
+  .meal-seg .meal:not(.sel):hover .m-name{color:var(--brass-bright)}
+  .meal-seg .meal.sel{background:linear-gradient(180deg,#d9bd85,#bd9a5d)}
+  .meal-seg .meal.sel .m-name{color:#1a140c}
+  .meal-seg .meal.sel .m-time{color:rgba(26,20,12,.66)}
+
   .pace-list{display:flex;flex-direction:column;gap:12px}
   .pace{border:1px solid var(--line);border-radius:4px;padding:18px 18px;cursor:pointer;transition:.2s;display:flex;justify-content:space-between;align-items:center}
   .pace:hover{border-color:var(--brass)}
@@ -803,7 +815,13 @@
           </div>
           <div class="eyebrow flow-q">The table</div>
           <div class="display-l">What are you<br>hungry for?</div>
-          <div class="body-s flow-sub" style="margin-top:10px">Choose as many as you like, or skip — we'll build the dinner around your craving.</div>
+          <div class="body-s flow-sub" style="margin-top:10px">Set the meal, then your cravings — or skip, and we'll compose the table for you.</div>
+
+          <div class="eyebrow" style="margin-top:26px">The meal</div>
+          <div class="meal-seg" id="mealRow"></div>
+
+          <div class="eyebrow" style="margin-top:28px">The cuisine <span style="color:var(--bone-faint);text-transform:none;letter-spacing:0">(optional)</span></div>
+          <div class="body-s" style="color:var(--bone-dim);margin:6px 0 14px">Choose as many as you like.</div>
           <div class="chip-grid" id="foodChips"></div>
         </div>
         <div class="flow-foot" style="display:flex;gap:12px">
@@ -1798,7 +1816,7 @@
   });
 
   /* ---------- state ---------- */
-  const state={ neighborhood:null, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All', tiers:null, currentTier:'explorer', currentTierMultiplier:1 };
+  const state={ neighborhood:null, meal:'dinner', food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All', tiers:null, currentTier:'explorer', currentTierMultiplier:1 };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
@@ -2020,7 +2038,10 @@
     {key:'mexican', label:'Mexican',     match:['mexican','tacos']},
     {key:'asian',   label:'Asian',       match:['asian','sushi','wagyu']},
     {key:'european',label:'European',    match:['italian','french','mediterranean','pasta','pizza']},
-    {key:'bar_food',label:'Bar Food',    match:['burgers','tacos','pizza']}
+    {key:'bar_food',label:'Bar Food',    match:['burgers','tacos','pizza']},
+    {key:'healthy',   label:'Healthy',    match:['vegetarian','vegan','gluten_free','seafood']},
+    {key:'vegetarian',label:'Vegetarian', match:['vegetarian']},
+    {key:'vegan',     label:'Vegan',      match:['vegan']}
   ];
   const FOOD_MATCH={}; FOODS.forEach(f=>{ FOOD_MATCH[f.key]=f.match||[f.key]; });
   const DRINKS=[
@@ -2065,6 +2086,25 @@
   }
   buildChips('foodChips',FOODS,state.food);
   buildChips('drinkChips',DRINKS,state.drinks);
+
+  /* meal type — single-select segmented control above the cuisine chips */
+  const MEALS=[
+    {key:'breakfast',label:'Breakfast',time:'Morning'},
+    {key:'lunch',    label:'Lunch',    time:'Midday'},
+    {key:'dinner',   label:'Dinner',   time:'Evening'}
+  ];
+  function buildMealSeg(){
+    const el=document.getElementById('mealRow'); if(!el) return;
+    el.innerHTML='';
+    MEALS.forEach(({key,label,time})=>{
+      const m=document.createElement('div');
+      m.className='meal'+(state.meal===key?' sel':'');
+      m.innerHTML='<div class="m-name">'+label+'</div><div class="m-time">'+time+'</div>';
+      m.onclick=()=>{ state.meal=key; buildMealSeg(); };
+      el.appendChild(m);
+    });
+  }
+  buildMealSeg();
 
   /* Venue settings the member can steer toward. Each maps to a matcher (below) so
      the itinerary engine prefers venues that fit the chosen vibe. Settings without
