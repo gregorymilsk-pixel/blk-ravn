@@ -1816,7 +1816,7 @@
   });
 
   /* ---------- state ---------- */
-  const state={ neighborhood:null, meal:'dinner', food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All', tiers:null, currentTier:'explorer', currentTierMultiplier:1 };
+  const state={ neighborhood:null, meal:'dinner', mealAuto:true, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All', tiers:null, currentTier:'explorer', currentTierMultiplier:1 };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
@@ -2100,11 +2100,35 @@
       const m=document.createElement('div');
       m.className='meal'+(state.meal===key?' sel':'');
       m.innerHTML='<div class="m-name">'+label+'</div><div class="m-time">'+time+'</div>';
-      m.onclick=()=>{ state.meal=key; buildMealSeg(); };
+      m.onclick=()=>{ state.meal=key; state.mealAuto=false; buildMealSeg(); };
       el.appendChild(m);
     });
   }
   buildMealSeg();
+
+  /* ---------- time-of-day awareness (device clock as the timestamp) ---------- */
+  function partOfDay(d=new Date()){
+    const h=d.getHours();
+    if(h<11) return 'morning';
+    if(h<17) return 'afternoon';
+    return 'evening';
+  }
+  function mealForNow(d=new Date()){
+    const p=partOfDay(d);
+    return p==='morning'?'breakfast':p==='afternoon'?'lunch':'dinner';
+  }
+  const MEAL_WORD={breakfast:'morning',lunch:'afternoon',dinner:'evening'};
+  function mealWord(){ return MEAL_WORD[state.meal]||'evening'; }
+  function updateGreeting(){
+    const p=partOfDay();
+    const g = p==='morning'?'Good morning':p==='afternoon'?'Good afternoon':'Good evening';
+    const eb=document.querySelector('#home .greet-eyebrow'); if(eb) eb.textContent=g;
+    const sub=document.querySelector('#home .greet-sub');
+    if(sub) sub.textContent = p==='evening'
+      ? 'Ready to discover something new tonight?'
+      : 'Ready to discover something new today?';
+  }
+  updateGreeting();
 
   /* Venue settings the member can steer toward. Each maps to a matcher (below) so
      the itinerary engine prefers venues that fit the chosen vibe. Settings without
@@ -2157,7 +2181,7 @@
   const DRINK_VENUE_TYPES=['Cocktail Bar','Wine Bar','Brewery'];
   const FOOD_VENUE_TYPES=['Fine Dining','Casual Dining'];
 
-  function scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys){
+  function scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys, openCtx){
     let score=0;
     const matched=[];
     foodKeys.forEach(k=>{
@@ -2167,12 +2191,14 @@
     drinkKeys.forEach(k=>{ if(v.drink.includes(k)){ score+=2; matched.push(k); } });
     if(neighborhood && v.neighborhood===neighborhood) score+=3;
     if(styleKeys) styleKeys.forEach(sk=>{ if(venueMatchesStyle(v,sk)) score+=3; });
+    // strongly prefer venues actually open at this stop's time
+    if(openCtx && venueOpenAt(v, openCtx.mins, openCtx.hoursIdx)) score+=6;
     return {score, matched};
   }
 
   /* picks the best-matching venue for a role ('food' or 'drink'), excluding names already used.
      refLat/refLon anchor the radius — the previous stop for chaining, or the member's location for the first stop. */
-  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius, allowedTypes, styleKeys){
+  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius, allowedTypes, styleKeys, openCtx){
     const types = (allowedTypes && allowedTypes.length) ? allowedTypes : (role==='food' ? FOOD_VENUE_TYPES : DRINK_VENUE_TYPES);
     let candidates = VENUES.filter(v=>types.includes(v.type) && !usedNames.has(v.name));
     if(candidates.length===0) return null;
@@ -2184,7 +2210,7 @@
 
     let best=null, bestScore=-1, bestMatched=[], bestDist=Infinity;
     pool.forEach(({v,dist})=>{
-      const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys);
+      const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys, openCtx);
       if(score>bestScore || (score===bestScore && dist<bestDist)){
         best=v; bestScore=score; bestMatched=matched; bestDist=dist;
       }
@@ -2192,26 +2218,64 @@
     return {venue:best, matched:bestMatched, dist:bestDist, withinRadius};
   }
 
-  const PACE_PLANS={
-    2:[{role:'drink',course:'Aperitivo',time:'6:30 PM'},{role:'food',course:'Dinner',time:'8:00 PM'}],
-    3:[{role:'drink',course:'Aperitivo',time:'6:30 PM'},{role:'food',course:'Dinner',time:'8:00 PM'},{role:'drink',course:'Nightcap',time:'10:30 PM'}],
-    4:[{role:'drink',course:'Aperitivo',time:'6:00 PM'},{role:'food',course:'Dinner',time:'7:45 PM'},{role:'drink',course:'Second Pour',time:'9:15 PM'},{role:'drink',course:'Nightcap',time:'10:45 PM'}]
+  /* Meal-aware itineraries — times and courses shift with the chosen meal, which
+     defaults to the member's local time of day (see mealForNow / startFlow). */
+  const MEAL_PLANS={
+    breakfast:{
+      2:[{role:'food',course:'Breakfast',time:'9:00 AM'},{role:'food',course:'Coffee & Pastry',time:'10:30 AM'}],
+      3:[{role:'food',course:'Breakfast',time:'8:30 AM'},{role:'food',course:'Coffee & Pastry',time:'10:00 AM'},{role:'food',course:'Late Brunch',time:'11:30 AM'}],
+      4:[{role:'food',course:'Early Breakfast',time:'8:00 AM'},{role:'food',course:'Coffee & Pastry',time:'9:30 AM'},{role:'food',course:'Mid-Morning Bite',time:'11:00 AM'},{role:'food',course:'Late Brunch',time:'12:15 PM'}]
+    },
+    lunch:{
+      2:[{role:'food',course:'Lunch',time:'12:30 PM'},{role:'drink',course:'Afternoon Drink',time:'2:00 PM'}],
+      3:[{role:'drink',course:'Midday Aperitivo',time:'12:00 PM'},{role:'food',course:'Lunch',time:'1:00 PM'},{role:'drink',course:'Afternoon Drink',time:'3:00 PM'}],
+      4:[{role:'drink',course:'Midday Aperitivo',time:'11:45 AM'},{role:'food',course:'Lunch',time:'1:00 PM'},{role:'drink',course:'Afternoon Drink',time:'3:00 PM'},{role:'food',course:'Early Bites',time:'5:00 PM'}]
+    },
+    dinner:{
+      2:[{role:'drink',course:'Aperitivo',time:'6:30 PM'},{role:'food',course:'Dinner',time:'8:00 PM'}],
+      3:[{role:'drink',course:'Aperitivo',time:'6:30 PM'},{role:'food',course:'Dinner',time:'8:00 PM'},{role:'drink',course:'Nightcap',time:'10:30 PM'}],
+      4:[{role:'drink',course:'Aperitivo',time:'6:00 PM'},{role:'food',course:'Dinner',time:'7:45 PM'},{role:'drink',course:'Second Pour',time:'9:15 PM'},{role:'drink',course:'Nightcap',time:'10:45 PM'}]
+    }
   };
 
+  /* ---------- open-hours parsing (keeps the itinerary to venues open at each stop) ---------- */
+  function parseClock(t){ // "5:00 PM" -> minutes since midnight
+    const m=String(t).trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if(!m) return null;
+    let h=(+m[1])%12; if(/pm/i.test(m[3])) h+=12;
+    return h*60 + (+m[2]);
+  }
+  /* venue.hours is Mon..Sun; JS getDay() is Sun..Sat, so shift by 6 */
+  function hoursIndexForToday(){ return (new Date().getDay()+6)%7; }
+  function venueOpenAt(v, mins, hoursIdx){
+    if(mins==null || !v.hours || !v.hours[hoursIdx]) return false;
+    const s=v.hours[hoursIdx];
+    if(/closed/i.test(s)) return false;
+    const parts=s.split('-');
+    if(parts.length<2) return false;
+    let open=parseClock(parts[0]), close=parseClock(parts[1]);
+    if(open==null || close==null) return false;
+    if(close<=open) close+=24*60; // spans past midnight
+    return mins>=open && mins<=close;
+  }
+
   function buildItinerary(){
-    const plan = PACE_PLANS[state.pace] || PACE_PLANS[3];
+    const meal = MEAL_PLANS[state.meal] ? state.meal : 'dinner';
+    const plan = MEAL_PLANS[meal][state.pace] || MEAL_PLANS[meal][3] || MEAL_PLANS.dinner[3];
     const foodKeys=[...state.food], drinkKeys=[...state.drinks];
     const styleKeys=[...state.venueTypes]; // venue-style preferences (soft scoring boost)
+    const hoursIdx=hoursIndexForToday();
     const used=new Set();
     const stops=[];
     let refLat=USER_LOCATION.lat, refLon=USER_LOCATION.lon;
     plan.forEach(slot=>{
-      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, null, styleKeys);
+      const openCtx={mins:parseClock(slot.time), hoursIdx};
+      const pick = pickVenueForRole(slot.role, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, null, styleKeys, openCtx);
       if(!pick) return;
       used.add(pick.venue.name);
       let why = pick.matched.length
         ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
-        : (slot.role==='food' ? 'Hand-picked for tonight’s table.' : 'Hand-picked to open your night.');
+        : (slot.role==='food' ? 'Hand-picked for your table.' : 'Hand-picked to open the outing.');
       if(!pick.withinRadius) why += ' Closest match — just outside your '+state.radius+' mi radius.';
       stops.push({...slot, venue:pick.venue, why});
       refLat=pick.venue.lat; refLon=pick.venue.lon;
@@ -2236,13 +2300,18 @@
     // reset confirmation screens back to their form state
     if(id==='reset') resetDone('reset');
     if(id==='venue-checkin') resetDone('venue');
+    if(id==='home') updateGreeting();
     if(id==='flow-loc' || id==='explore' || id==='results') requestGeolocation();
     if(id==='flow-loc' || id==='results') startLiveTracking(); else stopLiveTracking();
     if(id==='flow-loc') renderLocMap();
     document.querySelectorAll('#protoChips button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
     syncNav(id);
   }
-  function startFlow(){ go('flow-loc'); }
+  function startFlow(){
+    // default the meal to the current time of day unless the member has chosen one
+    if(state.mealAuto){ state.meal=mealForNow(); buildMealSeg(); }
+    go('flow-loc');
+  }
 
   /* skip a curate step — clears that step's selections, then advances */
   function skipStep(nextId, which){
@@ -2426,17 +2495,22 @@
 
     const sum=document.getElementById('resSummary'); sum.innerHTML='';
     const pills=[...state.food].slice(0,1).concat([...state.drinks].slice(0,1)).map(k=>TAG_LABELS[k]||k);
-    if(state.venueTypes.size) pills.push([...state.venueTypes].join(' + '));
+    if(state.meal && state.meal!=='dinner') pills.unshift(state.meal.charAt(0).toUpperCase()+state.meal.slice(1));
+    if(state.venueTypes.size){
+      const STYLE_SHORT={casual:'Casual',fine:'Fine dining',waterfront:'Waterfront',rooftop:'Rooftop',cocktail:'Cocktail bar',brewery:'Brewery',winery:'Winery',speakeasy:'Speakeasy',coffee:'Coffee shop'};
+      pills.push([...state.venueTypes].map(k=>STYLE_SHORT[k]||k)[0]);
+    }
     pills.push(state.pace+' stop'+(state.pace===1?'':'s'));
     pills.push('within '+state.radius+' mi');
     pills.forEach(t=>{ const p=document.createElement('span'); p.className='pill'; p.textContent=t; sum.appendChild(p); });
 
     const locationLabel = state.neighborhood || (USER_LOCATION.live ? USER_LOCATION.label.split(' · ')[0] : 'San Diego');
-    document.querySelectorAll('#results .display-l')[0].innerHTML='Your evening,<br>'+escHtml(locationLabel)+'.';
+    const word = mealWord();
+    document.querySelectorAll('#results .display-l')[0].innerHTML='Your '+word+',<br>'+escHtml(locationLabel)+'.';
 
     document.getElementById('timeline').innerHTML = currentItinerary.length
-      ? currentItinerary.map(renderTimelineItem).join('') + '<button class="btn btn-ghost" style="margin-top:22px" onclick="startFlow()">Recompose the evening</button>'
-      : '<div class="body-s" style="text-align:center;padding:20px 0">No venues matched — try different picks.</div><button class="btn btn-ghost" style="margin-top:22px" onclick="startFlow()">Recompose the evening</button>';
+      ? currentItinerary.map(renderTimelineItem).join('') + '<button class="btn btn-ghost" style="margin-top:22px" onclick="startFlow()">Recompose the '+word+'</button>'
+      : '<div class="body-s" style="text-align:center;padding:20px 0">No venues matched — try different picks.</div><button class="btn btn-ghost" style="margin-top:22px" onclick="startFlow()">Recompose the '+word+'</button>';
 
     if(currentItinerary.length) renderMap(currentItinerary);
     updateProg();
@@ -2448,7 +2522,7 @@
     const note=document.getElementById('progNote');
     if(items.length===0) note.innerHTML='';
     else if(done===items.length) note.innerHTML='Your moment is complete. You were seen at every door. ✦';
-    else note.innerHTML='Check off each stop as the night unfolds — '+done+' of '+items.length+' complete.';
+    else note.innerHTML='Check off each stop as the '+mealWord()+' unfolds — '+done+' of '+items.length+' complete.';
   }
 
   /* ---------- wishlist functions ---------- */
