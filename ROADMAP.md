@@ -19,6 +19,8 @@ is already live in the app.
   - **OpenTable partner / affiliate integration** — real-time availability and in-app booking instead of a search handoff.
 
 ## Data / coverage
+- **Finish coastal venue coordinate verification** — pending real lat/lon (still approximate): The Pennant, Lazy Eye Coffee, Green Fork, Rosemary's, Lahaina Beach House, Mavericks, JRDN, Price Street Pizza, Drift Cafe, Vanman's, Paradisaea, Pepino, El Pueblo, Mini's Panini. Also confirm neighborhood for Lahaina Beach House and Paradisaea (marked Pacific Beach, awaiting coords). Verify ambiguous venues (Molly's, Vanman's, Zoya, Lazy Eye Coffee).
+- Add **real phone numbers** to the venue `phone` field (also enables direct-dial "Call to book").
 - Expand venues **beyond San Diego** — the location engine currently maps everyone to San Diego neighborhoods.
 - Add more **café / brunch venues** to keep enriching morning itineraries.
 
