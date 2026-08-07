@@ -2309,7 +2309,7 @@
     // Times are estimated live from the member's current clock, walking pace and time spent per stop.
     const MEAL_START={breakfast:7*60+30, lunch:12*60, dinner:18*60}; // natural earliest start when planning ahead
     const DWELL={coffee:40, food:90, drink:60};                      // minutes typically spent at each stop
-    const WALK_MPH=3;                                                // ~20 min per mile on foot
+    const WALK_MPH=3, DRIVE_MPH=22, WALK_CAP=25;                     // beyond ~25 min on foot, suggest driving/riding
     let clock=Math.max(nowMinutes(), MEAL_START[meal]||0);           // start now, unless the meal is still ahead
     const used=new Set();
     const stops=[];
@@ -2320,13 +2320,15 @@
       if(!pick) return;
       used.add(pick.venue.name);
       const walkMin=Math.max(1, Math.round((pick.dist/WALK_MPH)*60)); // from the member (first stop) or the previous venue
-      clock+=walkMin;                                                 // arrival time at this stop
+      const drive=walkMin>WALK_CAP;                                   // too far to walk comfortably
+      const travelMin=drive ? Math.max(3, Math.round((pick.dist/DRIVE_MPH)*60)) : walkMin;
+      clock+=travelMin;                                               // arrival time at this stop
       const timeStr=minutesToClock(clock);
       let why = pick.matched.length
         ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
         : (slot.role==='food' ? 'Hand-picked for your table.' : slot.role==='coffee' ? 'A local favorite for coffee and pastries.' : 'Hand-picked to open the outing.');
       if(!pick.withinRadius) why += ' Closest match — just outside your '+state.radius+' mi radius.';
-      stops.push({...slot, time:timeStr, walkMin, venue:pick.venue, why});
+      stops.push({...slot, time:timeStr, walkMin, travelMin, travelMode:drive?'drive':'walk', venue:pick.venue, why});
       clock+=DWELL[slot.role]||60;                                    // time spent here before the next leg
       refLat=pick.venue.lat; refLon=pick.venue.lon;
     });
@@ -2482,8 +2484,9 @@
     for(let i=1;i<stops.length;i++){
       miles += milesBetween(stops[i-1].venue.lat, stops[i-1].venue.lon, stops[i].venue.lat, stops[i].venue.lon);
     }
+    const hasDrive = stops.some(s=>s.travelMode==='drive');
     document.getElementById('resLegend').textContent = stops.length>1
-      ? 'Your route · '+(miles<0.1?'a short walk':miles.toFixed(1)+' mi on foot')
+      ? 'Your route · '+(miles<0.1?'a short walk':miles.toFixed(1)+' mi'+(hasDrive?' · walk + ride':' on foot'))
       : 'Your stop';
   }
 
@@ -2523,7 +2526,7 @@
       <div class="tl-node"><span class="num">${index+1}</span><svg class="check" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="#1a140c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div class="tl-card">
         <button class="heart-btn" onclick="event.stopPropagation(); toggleCardHeart(this, '${escJsStr(v.name)}')">♡</button>
-        <div class="time">${stop.time} · ${escHtml(stop.course)}${stop.walkMin!=null ? ' · '+stop.walkMin+' min walk'+(index===0?' from you':'') : ''}</div>
+        <div class="time">${stop.time} · ${escHtml(stop.course)}${stop.travelMin!=null ? ' · '+(stop.travelMode==='drive' ? '🚗 '+stop.travelMin+' min drive'+(index===0?' from you':'')+' · easier by car or rideshare' : stop.travelMin+' min walk'+(index===0?' from you':'')) : ''}</div>
         <h4>${escHtml(v.name)}</h4>
         <div class="type">${escHtml(v.type)} · ${escHtml(v.neighborhood)}</div>
         ${priceDressLabel(v) ? `<div class="type" style="color:var(--brass);margin-top:2px">${escHtml(priceDressLabel(v))}</div>` : ''}
