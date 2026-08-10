@@ -6,7 +6,7 @@
 <title>BLK RAVN — App Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=Dancing+Script:wght@400;500;600;700&family=Parisienne&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -201,6 +201,20 @@
   .pw-eye:hover{color:var(--brass)}
   .field-row{display:flex;gap:16px}
   .field-row .field{flex:1}
+
+  /* create-account step indicator */
+  .join-steps{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+  .join-step{font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--bone-faint);white-space:nowrap;transition:color .3s}
+  .join-step.on{color:var(--brass)}
+  .join-step-line{flex:1;height:1px;background:var(--line-soft)}
+
+  /* card entry */
+  .cc-wrap{position:relative}
+  .cc-wrap input{padding-right:56px}
+  .cc-brand{position:absolute;right:0;top:50%;transform:translateY(-50%);font-family:var(--ui);font-weight:500;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);pointer-events:none}
+  .cc-secure{display:flex;align-items:center;gap:7px;color:var(--bone-faint);margin:2px 0 22px}
+  .cc-secure svg{color:var(--brass);flex:none}
+  .cc-secure span{font-family:var(--ui);font-weight:300;font-size:10.5px;letter-spacing:.05em}
 
   .auth-meta{display:flex;justify-content:space-between;align-items:center;margin:2px 0 24px}
 
@@ -562,6 +576,163 @@
     #results .scroll{padding-top:20px}
     #profile .scroll{padding-top:20px}
   }
+
+  /* ============================================================
+     INTRO — "The Raven's Dispatch"
+     New-member onboarding story: sealed scroll → typewriter tale
+     with per-letter haptics. Plays once, right after signup.
+     ============================================================ */
+  #intro{background:#050403;padding:0}
+  #intro .intro-stage{
+    position:absolute;inset:0;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:0 30px;text-align:center;
+    background:
+      radial-gradient(115% 70% at 50% -8%, #241a0e 0%, rgba(20,14,8,0) 55%),
+      radial-gradient(90% 60% at 50% 116%, #17100a 0%, rgba(0,0,0,0) 60%),
+      #050403;
+  }
+  /* candlelight glow up top — a slow, warm flicker */
+  #intro .moon{
+    position:absolute;top:-96px;left:50%;transform:translateX(-50%);
+    width:300px;height:300px;border-radius:50%;
+    background:radial-gradient(circle,rgba(230,190,120,.2),rgba(220,180,120,0) 66%);
+    filter:blur(5px);pointer-events:none;animation:candle 5.5s ease-in-out infinite;
+  }
+  @keyframes candle{
+    0%,100%{opacity:.85;transform:translateX(-50%) scale(1)}
+    28%{opacity:1;transform:translateX(-51%) scale(1.05)}
+    54%{opacity:.72;transform:translateX(-49%) scale(.97)}
+    76%{opacity:.95;transform:translateX(-50.5%) scale(1.03)}
+  }
+  /* vignette to draw the eye inward — cinematic framing */
+  #intro .intro-stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
+    background:radial-gradient(120% 90% at 50% 42%, rgba(0,0,0,0) 42%, rgba(0,0,0,.55) 100%)}
+  /* a resting quill, lower corner */
+  #intro .quill{position:absolute;bottom:60px;right:22px;width:120px;color:var(--brass);opacity:.16;pointer-events:none;transform:rotate(8deg);z-index:3}
+  /* faint watermark raven, slow breath */
+  #intro .raven-ghost{
+    position:absolute;top:47%;left:50%;width:560px;max-width:158%;
+    transform:translate(-50%,-50%);opacity:.055;pointer-events:none;color:var(--brass);
+    animation:ghostBreath 10s ease-in-out infinite;
+  }
+  @keyframes ghostBreath{
+    0%,100%{opacity:.045;transform:translate(-50%,-50%) scale(1)}
+    50%{opacity:.08;transform:translate(-50%,-51%) scale(1.035)}
+  }
+  /* drifting embers / gold dust */
+  #intro .embers{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  #intro .ember{
+    position:absolute;bottom:-12px;border-radius:50%;background:var(--brass-bright);
+    box-shadow:0 0 7px 1px rgba(220,200,150,.65);opacity:0;
+    animation:emberRise linear infinite;
+  }
+  @keyframes emberRise{
+    0%{transform:translateY(0);opacity:0}
+    14%{opacity:.85}
+    82%{opacity:.45}
+    100%{transform:translateY(-760px);opacity:0}
+  }
+  /* filigree corners */
+  #intro .corner{position:absolute;width:66px;height:66px;color:var(--brass);opacity:.32;pointer-events:none}
+  #intro .corner.tl{top:16px;left:16px}
+  #intro .corner.tr{top:16px;right:16px;transform:scaleX(-1)}
+  #intro .corner.bl{bottom:16px;left:16px;transform:scaleY(-1)}
+  #intro .corner.br{bottom:16px;right:16px;transform:scale(-1,-1)}
+  /* content stack */
+  #intro .intro-inner{position:relative;z-index:5;width:100%;max-width:322px;display:flex;flex-direction:column;align-items:center}
+
+  /* ---- SEAL state ---- */
+  #intro .seal-wrap{display:flex;flex-direction:column;align-items:center;max-height:660px;overflow:hidden;transition:opacity .6s ease,transform .6s ease,max-height .7s ease .1s}
+  /* a closed, ribbon-bound scroll sealed with the BLK RAVN wax stamp */
+  #intro .closed-scroll{position:relative;width:150px;height:288px;cursor:pointer;margin-bottom:6px;animation:scrollFloat 6s ease-in-out infinite;-webkit-tap-highlight-color:transparent}
+  @keyframes scrollFloat{0%,100%{transform:translateY(0) rotate(-.6deg)}50%{transform:translateY(-9px) rotate(.6deg)}}
+  #intro .cs-paper{position:absolute;top:16px;bottom:16px;left:11px;right:11px;border-radius:8px;
+    background:linear-gradient(90deg,#181209 0%,#2c2216 15%,#4a3820 50%,#2c2216 85%,#181209 100%);
+    box-shadow:inset 0 0 30px rgba(0,0,0,.55),0 26px 52px -18px rgba(0,0,0,.9)}
+  #intro .cs-paper::before,#intro .cs-paper::after{content:"";position:absolute;top:0;bottom:0;width:9px;background:rgba(0,0,0,.26)}
+  #intro .cs-paper::before{left:28px}#intro .cs-paper::after{right:28px}
+  #intro .cs-rod{position:absolute;left:0;right:0;height:26px;border-radius:13px;
+    background:linear-gradient(180deg,#ecd6a6,#a5824a 46%,#6b5230 78%,#4a3823);
+    box-shadow:0 4px 11px rgba(0,0,0,.55),inset 0 2px 3px rgba(255,238,205,.45)}
+  #intro .cs-rod.top{top:0}#intro .cs-rod.bottom{bottom:0}
+  #intro .cs-rod::before,#intro .cs-rod::after{content:"";position:absolute;top:50%;width:12px;height:34px;border-radius:4px;transform:translateY(-50%);background:linear-gradient(180deg,#dcc08d,#7a5c30);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  #intro .cs-rod::before{left:-6px}#intro .cs-rod::after{right:-6px}
+  #intro .cs-ribbon{position:absolute;top:50%;left:-9px;right:-9px;height:36px;transform:translateY(-50%);
+    background:linear-gradient(180deg,#241a0c,#0e0904);border-top:1px solid rgba(196,164,107,.32);border-bottom:1px solid rgba(120,90,45,.4);box-shadow:0 7px 17px rgba(0,0,0,.55)}
+  #intro .cs-stamp{position:absolute;top:50%;left:50%;width:84px;height:84px;transform:translate(-50%,-50%);border-radius:50%;
+    background:radial-gradient(circle at 38% 30%,#b98d5c 0%,#7d4a2c 34%,#521f16 70%,#340f0c 100%);
+    box-shadow:inset 0 3px 10px rgba(255,220,180,.34),inset 0 -12px 24px rgba(0,0,0,.6),0 14px 30px -8px rgba(0,0,0,.85),0 0 40px -6px rgba(180,120,60,.5);
+    display:flex;align-items:center;justify-content:center;animation:sealPulse 2.8s ease-in-out infinite}
+  @keyframes sealPulse{
+    0%,100%{box-shadow:inset 0 3px 10px rgba(255,220,180,.34),inset 0 -12px 24px rgba(0,0,0,.6),0 14px 30px -8px rgba(0,0,0,.85),0 0 26px -8px rgba(180,120,60,.42)}
+    50%{box-shadow:inset 0 3px 10px rgba(255,220,180,.4),inset 0 -12px 24px rgba(0,0,0,.6),0 14px 30px -8px rgba(0,0,0,.85),0 0 54px 2px rgba(200,140,70,.62)}
+  }
+  #intro .cs-stamp::after{content:"";position:absolute;inset:7px;border-radius:50%;border:1px dashed rgba(255,225,190,.3)}
+  #intro .cs-stamp svg{width:40px;height:37px;position:relative;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55))}
+  #intro .seal-eyebrow{margin-top:30px}
+  #intro .seal-tap{font-family:var(--display);font-style:italic;font-weight:500;font-size:20px;color:var(--brass-bright);margin-top:12px}
+  #intro .seal-hint{font-family:var(--ui);font-weight:300;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-faint);margin-top:18px;animation:hintFade 2.4s ease-in-out infinite}
+  @keyframes hintFade{0%,100%{opacity:.38}50%{opacity:.85}}
+  #intro.broken .seal-wrap{opacity:0;transform:scale(.8);max-height:0;margin:0;pointer-events:none}
+  /* wax shards */
+  #intro .shard{position:absolute;top:50%;left:50%;width:15px;height:15px;margin:-7px 0 0 -7px;border-radius:3px;background:linear-gradient(180deg,#8a5231,#3a130e);opacity:0;z-index:1}
+  #intro.broken .shard{animation:shatter .85s cubic-bezier(.2,.6,.3,1) forwards}
+  @keyframes shatter{0%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--dr))}}
+
+  /* ---- SCROLL state ---- */
+  #intro .scroll-wrap{
+    position:relative;width:100%;max-width:322px;opacity:0;transform:translateY(16px);
+    pointer-events:none;transition:opacity .8s ease .15s,transform .8s ease .15s;
+  }
+  #intro.broken .scroll-wrap{opacity:1;transform:translateY(0);pointer-events:auto}
+  #intro .rod{
+    height:15px;border-radius:8px;position:relative;z-index:3;
+    background:linear-gradient(180deg,#e6ce9d,#8c6a38 58%,#5a4423);
+    box-shadow:0 3px 9px rgba(0,0,0,.5);
+  }
+  #intro .rod::before,#intro .rod::after{content:"";position:absolute;top:50%;width:10px;height:24px;border-radius:3px;background:linear-gradient(180deg,#dcc08d,#7a5c30);transform:translateY(-50%);box-shadow:0 2px 5px rgba(0,0,0,.5)}
+  #intro .rod::before{left:-5px}#intro .rod::after{right:-5px}
+  #intro .parchment{
+    position:relative;max-height:0;min-height:0;
+    overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    background:linear-gradient(180deg,rgba(30,24,17,.97),rgba(19,14,9,.98));
+    border-left:1px solid rgba(196,164,107,.22);border-right:1px solid rgba(196,164,107,.22);
+    box-shadow:inset 0 0 46px rgba(0,0,0,.62);
+    transition:max-height 1s cubic-bezier(.2,.7,.2,1),min-height 1s cubic-bezier(.2,.7,.2,1);
+  }
+  #intro .parchment::-webkit-scrollbar{display:none}
+  /* soft fades at the top & bottom edges — the scroll feels endless */
+  #intro .parchment::before,#intro .parchment::after{content:"";position:sticky;left:0;right:0;display:block;height:26px;z-index:2;pointer-events:none}
+  #intro .parchment::before{top:0;background:linear-gradient(180deg,rgba(30,24,17,.98),rgba(30,24,17,0))}
+  #intro .parchment::after{bottom:0;margin-top:-26px;background:linear-gradient(0deg,rgba(19,14,9,.98),rgba(19,14,9,0))}
+  #intro.broken .parchment{max-height:432px;min-height:432px}
+  #intro .parchment-pad{padding:30px 26px}
+  #intro .parchment .flourish{width:38px;height:1px;background:var(--brass);opacity:.5;margin:2px auto 22px}
+  /* the letter itself — set in the house display face (matches home / sign-in) */
+  #intro .story{
+    font-family:var(--display);font-weight:400;font-size:19px;line-height:1.8;
+    color:var(--bone);white-space:pre-wrap;text-align:left;letter-spacing:.004em;
+  }
+  #intro .story .accent{color:var(--brass-bright);font-style:italic}
+  /* wet-ink nib that leads the writing hand */
+  #intro .nib{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:2px;vertical-align:.06em;
+    background:radial-gradient(circle,#fff4de 0%,#e8cea0 42%,rgba(220,200,150,0) 72%);
+    box-shadow:0 0 11px 2px rgba(224,192,140,.75);animation:nibPulse .9s ease-in-out infinite}
+  @keyframes nibPulse{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+  #intro .intro-cta{width:100%;max-width:322px;margin-top:26px;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .7s ease,transform .7s ease}
+  #intro .intro-cta.show{opacity:1;transform:translateY(0);pointer-events:auto}
+  #intro .intro-signoff{font-family:var(--ui);font-weight:300;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--bone-faint);text-align:center;margin-top:16px}
+  #intro .skip{
+    position:absolute;top:20px;right:22px;z-index:20;background:none;border:0;cursor:pointer;
+    font-family:var(--ui);font-weight:300;font-size:10px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--bone-faint);opacity:0;pointer-events:none;transition:opacity .4s;
+  }
+  #intro.broken .skip{opacity:.65;pointer-events:auto}
+  #intro .skip:hover{color:var(--brass)}
+  @media (prefers-reduced-motion: reduce){
+    #intro .ember,#intro .raven-ghost,#intro .closed-scroll,#intro .cs-stamp,#intro .moon,#intro .nib{animation:none}
+  }
 </style>
 </head>
 <body>
@@ -652,27 +823,64 @@
           <div class="join-divider"></div>
 
           <div class="join-form">
-            <div class="eyebrow">Create your account</div>
-            <div class="field"><label>Full name</label><input id="joinName" placeholder="Your name"></div>
-            <div class="field"><label>Email</label><input type="email" id="joinEmail" placeholder="you@email.com"></div>
-            <div class="field">
-              <label>Create a passphrase</label>
-              <div class="pw-wrap">
-                <input type="password" id="joinPw" placeholder="At least 8 characters">
-                <button class="pw-eye" onclick="togglePw('joinPw',this)" aria-label="Show passphrase">
-                  <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z" stroke="currentColor" stroke-width="1.1"/><circle cx="10" cy="10" r="2.6" stroke="currentColor" stroke-width="1.1"/></svg>
-                </button>
+            <!-- progress -->
+            <div class="join-steps">
+              <span class="join-step on" id="jsDot1">1 · Account</span>
+              <span class="join-step-line"></span>
+              <span class="join-step" id="jsDot2">2 · Membership</span>
+            </div>
+
+            <!-- STEP 1 — account details -->
+            <div id="joinStep1">
+              <div class="field"><label>Full name</label><input id="joinName" placeholder="Your name"></div>
+              <div class="field"><label>Email</label><input type="email" id="joinEmail" placeholder="you@email.com"></div>
+              <div class="field">
+                <label>Create a passphrase</label>
+                <div class="pw-wrap">
+                  <input type="password" id="joinPw" placeholder="At least 8 characters">
+                  <button class="pw-eye" onclick="togglePw('joinPw',this)" aria-label="Show passphrase">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z" stroke="currentColor" stroke-width="1.1"/><circle cx="10" cy="10" r="2.6" stroke="currentColor" stroke-width="1.1"/></svg>
+                  </button>
+                </div>
               </div>
+
+              <div class="checkrow" id="joinTerms" onclick="this.classList.toggle('on')">
+                <span class="checkbox"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <p>I agree to the <a>House Rules</a> and <a>Privacy Policy</a>, and to keep what's behind the door discreet.</p>
+              </div>
+
+              <div class="body-s" id="joinError" style="display:none;color:var(--brass);margin-bottom:14px"></div>
+              <button class="btn btn-fill" onclick="goToPayment()">Continue</button>
+              <div class="auth-foot">Already a member? <a onclick="go('signin')">Sign in</a></div>
             </div>
 
-            <div class="checkrow" id="joinTerms" onclick="this.classList.toggle('on')">
-              <span class="checkbox"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.5 3.5L12 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-              <p>I agree to the <a>House Rules</a> and <a>Privacy Policy</a>, and to keep what's behind the door discreet.</p>
-            </div>
+            <!-- STEP 2 — membership / payment -->
+            <div id="joinStep2" style="display:none">
+              <div class="eyebrow" style="display:block;margin-bottom:8px">Secure your membership</div>
+              <div class="body-s" style="margin-bottom:20px">A card confirms your place. You won't be charged until your membership is approved.</div>
 
-            <div class="body-s" id="joinError" style="display:none;color:var(--brass);margin-bottom:14px"></div>
-            <button class="btn btn-fill" id="joinBtn" onclick="handleSignUp()">Create account</button>
-            <div class="auth-foot">Already a member? <a onclick="go('signin')">Sign in</a></div>
+              <div class="field"><label>Name on card</label><input id="ccName" placeholder="Full name" autocomplete="cc-name"></div>
+              <div class="field"><label>Card number</label>
+                <div class="cc-wrap">
+                  <input id="ccNumber" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="23" oninput="formatCardNumber(this)">
+                  <span class="cc-brand" id="ccBrand"></span>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label>Expiry</label><input id="ccExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)"></div>
+                <div class="field"><label>CVC</label><input id="ccCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4" oninput="digitsOnly(this)"></div>
+              </div>
+              <div class="field"><label>Billing ZIP</label><input id="ccZip" inputmode="numeric" placeholder="92101" maxlength="10" oninput="digitsOnly(this)"></div>
+
+              <div class="cc-secure">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6"/></svg>
+                <span>Encrypted and secure. Cancel anytime.</span>
+              </div>
+
+              <div class="body-s" id="joinError2" style="display:none;color:var(--brass);margin-bottom:14px"></div>
+              <button class="btn btn-fill" id="joinBtn" onclick="handleSignUp()">Create account</button>
+              <div class="auth-foot"><a onclick="backToAccount()">‹ Back to details</a></div>
+            </div>
           </div>
         </div>
       </section>
@@ -729,6 +937,82 @@
             <div class="display-l">Check your email.</div>
             <div class="body-s" style="margin-top:12px;max-width:250px">If that address is on file, a reset link is on its way. It expires in 30 minutes.</div>
             <button class="btn btn-ghost" style="margin-top:28px;max-width:220px" onclick="go('signin')">Back to sign in</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ INTRO — THE RAVEN'S DISPATCH (new member) ============ -->
+      <section class="screen" id="intro">
+        <div class="intro-stage">
+          <div class="moon"></div>
+
+          <!-- faint watermark raven behind everything -->
+          <svg class="raven-ghost" viewBox="0 0 240 150" fill="currentColor" aria-hidden="true">
+            <g fill="currentColor">
+              <path d="M74 70 C110 60 162 70 190 86 C165 94 118 98 82 90 C74 86 70 76 74 70 Z"/>
+              <path d="M76 70 Q64 62 66 55 Q72 64 84 65 Z"/>
+              <circle cx="66" cy="60" r="10"/>
+              <polygon points="58,56 14,63 58,65"/>
+              <path d="M104 73 Q126 22 186 16 Q150 44 140 84 Z"/>
+              <polygon points="182,84 220,89 214,99 190,96"/>
+            </g>
+          </svg>
+
+          <div class="embers" id="introEmbers"></div>
+
+          <!-- filigree corners -->
+          <svg class="corner tl" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
+          <svg class="corner tr" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
+          <svg class="corner bl" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
+          <svg class="corner br" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
+
+          <!-- a resting quill -->
+          <svg class="quill" viewBox="0 0 120 220" fill="currentColor" aria-hidden="true">
+            <path d="M96 8 C58 30 30 82 34 140 C36 170 44 194 49 208 L55 194 C51 174 51 148 61 118 C74 82 96 46 96 8 Z"/>
+            <path d="M49 208 L46 220 L54 214 Z"/>
+          </svg>
+
+          <button class="skip" onclick="skipIntro()">Skip</button>
+
+          <div class="intro-inner">
+            <!-- SEAL state -->
+            <div class="seal-wrap" id="sealWrap">
+              <!-- a sealed scroll, bound with ribbon and stamped with the house mark -->
+              <div class="closed-scroll" onclick="breakSeal()">
+                <div class="cs-rod top"></div>
+                <div class="cs-paper"></div>
+                <div class="cs-rod bottom"></div>
+                <div class="cs-ribbon"></div>
+                <div class="cs-stamp" id="waxSeal">
+                  <svg viewBox="0 0 66 60" fill="none" aria-hidden="true">
+                    <path d="M33 5 L62 55 L4 55 Z" stroke="#f2d6aa" stroke-width="2"/>
+                    <path d="M22 23 L40 55 L4 55 Z" stroke="#f2d6aa" stroke-width="2"/>
+                    <path d="M44 23 L62 55 L26 55 Z" stroke="#f2d6aa" stroke-width="2"/>
+                  </svg>
+                  <!-- wax shards spawned by JS on break -->
+                </div>
+              </div>
+              <div class="eyebrow seal-eyebrow">A message has arrived</div>
+              <div class="seal-tap">Secrets of the city await.</div>
+              <div class="seal-hint">Tap the seal to open</div>
+            </div>
+
+            <!-- SCROLL state -->
+            <div class="scroll-wrap" id="scrollWrap">
+              <div class="rod"></div>
+              <div class="parchment">
+                <div class="parchment-pad">
+                  <div class="flourish"></div>
+                  <div class="story" id="introStory"></div>
+                </div>
+              </div>
+              <div class="rod" style="margin-top:-1px"></div>
+
+              <div class="intro-cta" id="introCta">
+                <button class="btn btn-fill" onclick="enterCity()">Enter the city</button>
+                <div class="intro-signoff">Keep what you find between us</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1745,25 +2029,108 @@
     document.getElementById(id).style.display='none';
   }
 
-  function handleSignUp(){
+  /* ---------- create account: step 1 (account) → step 2 (membership card) ---------- */
+  function resetJoinSteps(){
+    const s1=document.getElementById('joinStep1'), s2=document.getElementById('joinStep2');
+    if(s1) s1.style.display='block';
+    if(s2) s2.style.display='none';
+    const d1=document.getElementById('jsDot1'), d2=document.getElementById('jsDot2');
+    if(d1) d1.classList.add('on');
+    if(d2) d2.classList.remove('on');
+  }
+  function goToPayment(){
     const name=document.getElementById('joinName').value.trim();
     const email=document.getElementById('joinEmail').value.trim();
     const pw=document.getElementById('joinPw').value;
     const terms=document.getElementById('joinTerms');
     hideAuthError('joinError');
-
     if(!name){ showAuthError('joinError','Enter your full name.'); return; }
     if(!email){ showAuthError('joinError','Enter your email.'); return; }
     if(pw.length<6){ showAuthError('joinError','Passphrase needs to be at least 6 characters.'); return; }
     if(!terms.classList.contains('on')){ showAuthError('joinError','Please agree to the House Rules and Privacy Policy.'); return; }
+    document.getElementById('joinStep1').style.display='none';
+    document.getElementById('joinStep2').style.display='block';
+    document.getElementById('jsDot2').classList.add('on');
+    const cc=document.getElementById('ccName'); if(cc && !cc.value) cc.value=name;
+    const sc=document.querySelector('#join .scroll'); if(sc) sc.scrollTop=0;
+  }
+  function backToAccount(){
+    document.getElementById('joinStep2').style.display='none';
+    document.getElementById('joinStep1').style.display='block';
+    document.getElementById('jsDot2').classList.remove('on');
+    const sc=document.querySelector('#join .scroll'); if(sc) sc.scrollTop=0;
+  }
+
+  /* card field formatting + light client-side validation (prototype only) */
+  function digitsOnly(el){ el.value=el.value.replace(/\D/g,''); }
+  function formatCardNumber(el){
+    const v=el.value.replace(/\D/g,'').slice(0,19);
+    el.value=v.replace(/(.{4})/g,'$1 ').trim();
+    const b=document.getElementById('ccBrand'); if(b) b.textContent=cardBrand(v);
+  }
+  function formatExpiry(el){
+    let v=el.value.replace(/\D/g,'').slice(0,4);
+    if(v.length>=3) v=v.slice(0,2)+'/'+v.slice(2);
+    el.value=v;
+  }
+  function cardBrand(num){
+    if(/^4/.test(num)) return 'Visa';
+    if(/^(5[1-5]|2[2-7])/.test(num)) return 'Mastercard';
+    if(/^3[47]/.test(num)) return 'Amex';
+    if(/^6(011|5)/.test(num)) return 'Discover';
+    return '';
+  }
+  function luhnValid(num){
+    if(num.length<13) return false;
+    let sum=0, alt=false;
+    for(let i=num.length-1;i>=0;i--){
+      let n=parseInt(num[i],10);
+      if(alt){ n*=2; if(n>9) n-=9; }
+      sum+=n; alt=!alt;
+    }
+    return sum%10===0;
+  }
+  function expiryValid(v){
+    const m=/^(\d{2})\/(\d{2})$/.exec(v); if(!m) return false;
+    const mo=parseInt(m[1],10), yr=2000+parseInt(m[2],10);
+    if(mo<1||mo>12) return false;
+    return new Date(yr, mo, 1) > new Date(); // first of the month after expiry
+  }
+
+  function handleSignUp(){
+    const name=document.getElementById('joinName').value.trim();
+    const email=document.getElementById('joinEmail').value.trim();
+    const pw=document.getElementById('joinPw').value;
+    // account details were checked at step 1 — re-verify defensively
+    if(!name || !email || pw.length<6){ backToAccount(); showAuthError('joinError','Please complete your account details.'); return; }
+
+    const ccName=document.getElementById('ccName').value.trim();
+    const ccNum=document.getElementById('ccNumber').value.replace(/\D/g,'');
+    const ccExp=document.getElementById('ccExp').value.trim();
+    const ccCvc=document.getElementById('ccCvc').value.trim();
+    const ccZip=document.getElementById('ccZip').value.trim();
+    hideAuthError('joinError2');
+    // Lenient checks for now — any plausibly-shaped input passes so the flow can be
+    // demoed with fake numbers. Real card validation happens in Stripe at launch.
+    if(!ccName){ showAuthError('joinError2','Enter the name on your card.'); return; }
+    if(ccNum.length<12){ showAuthError('joinError2','Enter your card number.'); return; }
+    if(ccExp.length<5){ showAuthError('joinError2','Enter the expiry date (MM/YY).'); return; }
+    if(ccCvc.length<3){ showAuthError('joinError2','Enter your card security code.'); return; }
+    if(ccZip.length<5){ showAuthError('joinError2','Enter your billing ZIP.'); return; }
 
     const btn=document.getElementById('joinBtn');
     btn.disabled=true; btn.textContent='Creating account…';
+    // flag this session as a brand-new member so the message plays once,
+    // right after the account + card step is complete.
+    sessionStorage.setItem('blkravn_new_signup','1');
     auth.createUserWithEmailAndPassword(email, pw)
       .then(cred=>cred.user.updateProfile({displayName:name}))
-      .then(()=>{ updateMemberDisplay(auth.currentUser); syncUserProfile(auth.currentUser); go('home'); })
-      .catch(err=>{ showAuthError('joinError', authErrorMessage(err)); })
+      .then(()=>{ updateMemberDisplay(auth.currentUser); syncUserProfile(auth.currentUser); startIntro(); })
+      .catch(err=>{ showAuthError('joinError2', authErrorMessage(err)); })
       .finally(()=>{ btn.disabled=false; btn.textContent='Create account'; });
+    // NOTE: raw card details are intentionally NOT persisted. For real billing,
+    // tokenize with a PCI-compliant processor (e.g. Stripe Elements) and store
+    // only the returned token + card brand/last4 — never the PAN or CVC.
   }
 
   function handleSignIn(){
@@ -1816,7 +2183,11 @@
       loadUserData(user);
       const authScreens=['door','signin','join','reset'];
       const activeScreen=document.querySelector('.screen.active');
-      if(activeScreen && authScreens.includes(activeScreen.id)) go('home');
+      if(activeScreen && authScreens.includes(activeScreen.id)){
+        // brand-new members get the raven's dispatch; returning members go home
+        if(sessionStorage.getItem('blkravn_new_signup')) startIntro();
+        else go('home');
+      }
     } else {
       clearUserData();
       const activeScreen=document.querySelector('.screen.active');
@@ -2406,6 +2777,7 @@
     const s=document.getElementById(id); s.classList.add('active');
     const sc=s.querySelector('.scroll'); if(sc) sc.scrollTop=0;
     // reset confirmation screens back to their form state
+    if(id==='join') resetJoinSteps();
     if(id==='reset') resetDone('reset');
     if(id==='venue-checkin') resetDone('venue');
     if(id==='home') updateGreeting();
@@ -2995,6 +3367,169 @@
     if(id==='admin-roster'){ renderAdminRoster(); }
     if(id==='tiers'){ renderTierDetailsScreen(); }
   }
+
+  /* ============================================================
+     INTRO — "The Raven's Dispatch"
+     Sealed scroll → typewriter story with per-letter haptics.
+     ============================================================ */
+
+  /* The story, in segments. accent:true renders in italic brass. */
+  /* the member's first name, if we have it, for a personal greeting */
+  function memberFirstName(){
+    try{
+      const u=(typeof auth!=='undefined') && auth.currentUser;
+      let n=(u && u.displayName) || (document.getElementById('joinName') && document.getElementById('joinName').value) || '';
+      n=(n||'').trim().split(/\s+/)[0];
+      return n;
+    }catch(e){ return ''; }
+  }
+  /* the letter — built fresh so the greeting can carry the member's name */
+  function introSegments(){
+    const name=memberFirstName();
+    const greeting = name ? (name+",\n\n") : "Welcome in,\n\n";
+    return [
+      {t:greeting},
+      {t:"You've been hand selected to join BLK RAVN, a private membership where the city opens only for the few who know how to move through it.\n\n"},
+      {t:"The raven is your messenger. Tell it your mood and your taste, and it curates your days and nights. The corner tables, the rooms without a sign, the evenings that never make the calendar.\n\n"},
+      {t:"Every time we check you in, you rise.\n\n",accent:true},
+      {t:"The more you spend among us, the higher your standing climbs, and the more the house rewards you. Private events, quiet upgrades, and invitations kept for members only.\n\n"},
+      {t:"Membership moves by word of mouth. Someone decided you belonged.\n\n"},
+      {t:"Welcome to BLK RAVN.",accent:true},
+    ];
+  }
+
+  /* Haptics: Web Vibration API where supported (Android/Chrome).
+     iOS Safari has no web vibration — when this prototype is wrapped
+     natively (Capacitor / WKWebView), wire hapticTick() to the Taptic
+     Engine via the messageHandler hook below and it will "just work". */
+  function hapticTick(strong){
+    try{ if(navigator.vibrate) navigator.vibrate(strong?14:4); }catch(e){}
+    if(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic){
+      window.webkit.messageHandlers.haptic.postMessage(strong?'medium':'light');
+    }
+  }
+
+  let introTyping=false, introAbort=false, embersSpawned=false;
+
+  function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function introStoryFullHTML(){
+    return introSegments().map(s=> s.accent
+      ? '<span class="accent">'+escHtml(s.t)+'</span>'
+      : escHtml(s.t)).join('');
+  }
+
+  function spawnEmbers(){
+    if(embersSpawned) return; embersSpawned=true;
+    const box=document.getElementById('introEmbers'); if(!box) return;
+    for(let i=0;i<26;i++){
+      const e=document.createElement('div'); e.className='ember';
+      e.style.left=(Math.random()*100)+'%';
+      const dur=7+Math.random()*9;
+      e.style.animationDuration=dur+'s';
+      e.style.animationDelay=(-Math.random()*dur)+'s';
+      const sz=(1.5+Math.random()*2.4).toFixed(1);
+      e.style.width=sz+'px'; e.style.height=sz+'px';
+      box.appendChild(e);
+    }
+  }
+
+  function spawnShards(){
+    const wax=document.getElementById('waxSeal'); if(!wax) return;
+    for(let i=0;i<12;i++){
+      const s=document.createElement('div'); s.className='shard';
+      const ang=Math.random()*Math.PI*2, dist=55+Math.random()*75;
+      s.style.setProperty('--dx',(Math.cos(ang)*dist).toFixed(0)+'px');
+      s.style.setProperty('--dy',(Math.sin(ang)*dist+50).toFixed(0)+'px');
+      s.style.setProperty('--dr',(Math.random()*360-180).toFixed(0)+'deg');
+      s.style.animationDelay=(Math.random()*0.12).toFixed(2)+'s';
+      wax.appendChild(s);
+    }
+  }
+
+  function resetIntro(){
+    const intro=document.getElementById('intro'); if(!intro) return;
+    intro.classList.remove('broken');
+    introAbort=true; introTyping=false;
+    const el=document.getElementById('introStory'); if(el) el.innerHTML='';
+    const cta=document.getElementById('introCta'); if(cta) cta.classList.remove('show');
+  }
+
+  function startIntro(){
+    sessionStorage.removeItem('blkravn_new_signup');
+    const intro=document.getElementById('intro'); if(!intro) return;
+    if(intro.classList.contains('active')) return; // already showing
+    resetIntro();
+    go('intro');
+    spawnEmbers();
+  }
+
+  function breakSeal(){
+    const intro=document.getElementById('intro');
+    if(!intro || intro.classList.contains('broken')) return;
+    // a firm "thunk" as the seal cracks
+    try{ if(navigator.vibrate) navigator.vibrate([16,45,12]); }catch(e){}
+    hapticTick(true);
+    intro.classList.add('broken');
+    spawnShards();
+    setTimeout(typeIntroStory, 950); // begin after the scroll unfurls
+  }
+
+  function typeIntroStory(){
+    const el=document.getElementById('introStory'); if(!el) return;
+    el.innerHTML='';
+    const caret=document.createElement('span'); caret.className='nib'; // wet-ink pen tip
+    el.appendChild(caret);
+
+    // flatten the story into characters carrying their accent flag
+    const chars=[];
+    introSegments().forEach(seg=>{ for(const ch of seg.t) chars.push({ch,accent:!!seg.accent}); });
+
+    let i=0, curSpan=null, curAccent=null;
+    introTyping=true; introAbort=false;
+
+    function step(){
+      if(introAbort) return;
+      if(i>=chars.length){
+        introTyping=false;
+        if(caret.parentNode) caret.parentNode.removeChild(caret);
+        revealIntroCTA();
+        return;
+      }
+      const {ch,accent}=chars[i];
+      if(curSpan===null || accent!==curAccent){
+        curSpan=document.createElement('span');
+        if(accent) curSpan.className='accent';
+        curAccent=accent;
+        el.insertBefore(curSpan, caret);
+      }
+      curSpan.appendChild(document.createTextNode(ch));
+      i++;
+      if(ch.trim()) hapticTick(false); // one tick per visible glyph
+      // keep the freshly-written line in view — the scroll unrolls as you read
+      const par=el.closest('.parchment'); if(par) par.scrollTop=par.scrollHeight;
+
+      let d=22+Math.random()*20;                 // base cadence
+      if(ch===','||ch===';'||ch===':') d=200;    // breath at a comma
+      else if(ch==='.'||ch==='—'||ch==='!') d=340;// longer beat at a stop
+      else if(ch==='\n') d=130;
+      setTimeout(step, d);
+    }
+    step();
+  }
+
+  function skipIntro(){
+    introAbort=true; introTyping=false;
+    const el=document.getElementById('introStory');
+    if(el){ el.innerHTML=introStoryFullHTML(); const par=el.closest('.parchment'); if(par) par.scrollTop=0; }
+    revealIntroCTA();
+  }
+
+  function revealIntroCTA(){
+    const cta=document.getElementById('introCta');
+    if(cta) cta.classList.add('show');
+  }
+
+  function enterCity(){ go('home'); }
 
   /* ---------- prototype navigator chips ---------- */
   const pc=document.getElementById('protoChips');

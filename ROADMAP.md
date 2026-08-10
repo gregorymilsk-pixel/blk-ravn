@@ -24,5 +24,14 @@ is already live in the app.
 - Expand venues **beyond San Diego** — the location engine currently maps everyone to San Diego neighborhoods.
 - Add more **café / brunch venues** to keep enriching morning itineraries.
 
+## Payments / membership
+- **Shipped:** Create-account flow now has a 2-step UI (account → membership card). Card fields format + detect brand, with lenient validation so the flow can be demoed with fake numbers. Raw card data is **not** stored or transmitted.
+- **At launch — wire up Stripe:**
+  - Replace the plain card inputs with **Stripe Elements** (card number / expiry / CVC) so the card is tokenized in the browser; never handle the raw PAN/CVC ourselves (PCI compliance).
+  - On submit, create a Stripe **customer + SetupIntent/PaymentMethod**; store only the returned token + brand/last4 on the member profile.
+  - Decide the **membership price / plan** (no plan yet) and, if charging on approval, add the pricing line to the card step and a Stripe subscription/charge.
+  - Show the saved card's **brand + last4** on the Profile / member-card screen.
+  - Entry point in code: `handleSignUp()` in `index.html` (see the NOTE comment marking where tokenization goes).
+
 ## Dev / infra
 - Merge the **Vite dev setup** (on the `chore/dev-setup` branch) so both machines share a proper local dev server + build.
