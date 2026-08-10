@@ -588,9 +588,8 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     padding:0 30px;text-align:center;
     background:
-      radial-gradient(115% 70% at 50% -8%, #241a0e 0%, rgba(20,14,8,0) 55%),
-      radial-gradient(90% 60% at 50% 116%, #17100a 0%, rgba(0,0,0,0) 60%),
-      #050403;
+      radial-gradient(58% 40% at 50% 42%, rgba(160,116,58,.16) 0%, rgba(120,90,45,0) 62%),
+      #030302;
   }
   /* candlelight glow up top — a slow, warm flicker */
   #intro .moon{
@@ -672,7 +671,33 @@
   #intro .cs-stamp svg{width:40px;height:37px;position:relative;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.55))}
   #intro .seal-eyebrow{margin-top:30px}
   #intro .seal-tap{font-family:var(--display);font-style:italic;font-weight:500;font-size:20px;color:var(--brass-bright);margin-top:12px}
-  #intro .seal-hint{font-family:var(--ui);font-weight:300;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-faint);margin-top:18px;animation:hintFade 2.4s ease-in-out infinite}
+  #intro .seal-hint{font-family:var(--ui);font-weight:300;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-faint);margin-top:18px}
+
+  /* ---- black envelope + glowing gold raven seal ---- */
+  #intro .envelope{position:relative;width:236px;height:154px;cursor:pointer;perspective:800px;-webkit-tap-highlight-color:transparent}
+  #intro .env-body{position:absolute;inset:0;border-radius:7px;
+    background:linear-gradient(180deg,#0c0a07 0%,#050403 100%);
+    box-shadow:0 34px 70px -24px rgba(0,0,0,.95),0 0 0 1px rgba(196,164,107,.16),inset 0 0 40px rgba(0,0,0,.6)}
+  /* the closed flap — a downward triangle that opens on tap */
+  #intro .env-flap{position:absolute;top:0;left:0;right:0;height:88px;transform-origin:top center;
+    background:linear-gradient(180deg,#151009 0%,#0b0805 100%);
+    clip-path:polygon(0 0,100% 0,50% 100%);
+    box-shadow:0 1px 0 rgba(196,164,107,.14);
+    transition:transform .85s cubic-bezier(.3,.7,.2,1),opacity .6s ease;z-index:3}
+  #intro.broken .env-flap{transform:rotateX(-172deg);opacity:.5}
+  /* wax seal */
+  #intro .env-stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:78px;height:78px;border-radius:50%;z-index:6;color:#f3d9a6;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 42% 36%,#4a3417 0%,#2a1c0d 58%,#160f07 100%);
+    box-shadow:0 0 0 1px rgba(214,172,98,.42),0 0 52px -4px rgba(224,172,92,.6),inset 0 2px 8px rgba(255,222,170,.25),inset 0 -8px 16px rgba(0,0,0,.6);
+    animation:stampGlow 4.6s ease-in-out infinite}
+  #intro .env-stamp::after{content:"";position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(240,210,160,.28)}
+  #intro .env-stamp svg{width:46px;height:42px;position:relative;z-index:2;filter:drop-shadow(0 0 7px rgba(238,196,126,.7))}
+  @keyframes stampGlow{
+    0%,100%{box-shadow:0 0 0 1px rgba(214,172,98,.38),0 0 40px -6px rgba(224,172,92,.5),inset 0 2px 8px rgba(255,222,170,.22),inset 0 -8px 16px rgba(0,0,0,.6)}
+    50%{box-shadow:0 0 0 1px rgba(220,180,105,.5),0 0 66px 2px rgba(232,182,100,.72),inset 0 2px 8px rgba(255,226,178,.3),inset 0 -8px 16px rgba(0,0,0,.6)}
+  }
   @keyframes hintFade{0%,100%{opacity:.38}50%{opacity:.85}}
   #intro.broken .seal-wrap{opacity:0;transform:scale(.8);max-height:0;margin:0;pointer-events:none}
   /* wax shards */
@@ -731,7 +756,7 @@
   #intro.broken .skip{opacity:.65;pointer-events:auto}
   #intro .skip:hover{color:var(--brass)}
   @media (prefers-reduced-motion: reduce){
-    #intro .ember,#intro .raven-ghost,#intro .closed-scroll,#intro .cs-stamp,#intro .moon,#intro .nib{animation:none}
+    #intro .env-stamp,#intro .nib{animation:none}
   }
 </style>
 </head>
@@ -944,57 +969,27 @@
       <!-- ============ INTRO — THE RAVEN'S DISPATCH (new member) ============ -->
       <section class="screen" id="intro">
         <div class="intro-stage">
-          <div class="moon"></div>
-
-          <!-- faint watermark raven behind everything -->
-          <svg class="raven-ghost" viewBox="0 0 240 150" fill="currentColor" aria-hidden="true">
-            <g fill="currentColor">
-              <path d="M74 70 C110 60 162 70 190 86 C165 94 118 98 82 90 C74 86 70 76 74 70 Z"/>
-              <path d="M76 70 Q64 62 66 55 Q72 64 84 65 Z"/>
-              <circle cx="66" cy="60" r="10"/>
-              <polygon points="58,56 14,63 58,65"/>
-              <path d="M104 73 Q126 22 186 16 Q150 44 140 84 Z"/>
-              <polygon points="182,84 220,89 214,99 190,96"/>
-            </g>
-          </svg>
-
-          <div class="embers" id="introEmbers"></div>
-
-          <!-- filigree corners -->
-          <svg class="corner tl" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
-          <svg class="corner tr" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
-          <svg class="corner bl" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
-          <svg class="corner br" viewBox="0 0 60 60" fill="none" aria-hidden="true"><path d="M2 2h20M2 2v20M8 8c14 0 30 6 34 34" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="4" r="1.6" fill="currentColor"/></svg>
-
-          <!-- a resting quill -->
-          <svg class="quill" viewBox="0 0 120 220" fill="currentColor" aria-hidden="true">
-            <path d="M96 8 C58 30 30 82 34 140 C36 170 44 194 49 208 L55 194 C51 174 51 148 61 118 C74 82 96 46 96 8 Z"/>
-            <path d="M49 208 L46 220 L54 214 Z"/>
-          </svg>
-
           <button class="skip" onclick="skipIntro()">Skip</button>
 
           <div class="intro-inner">
-            <!-- SEAL state -->
+            <!-- SEALED state — a black envelope with a glowing gold raven seal -->
             <div class="seal-wrap" id="sealWrap">
-              <!-- a sealed scroll, bound with ribbon and stamped with the house mark -->
-              <div class="closed-scroll" onclick="breakSeal()">
-                <div class="cs-rod top"></div>
-                <div class="cs-paper"></div>
-                <div class="cs-rod bottom"></div>
-                <div class="cs-ribbon"></div>
-                <div class="cs-stamp" id="waxSeal">
-                  <svg viewBox="0 0 66 60" fill="none" aria-hidden="true">
-                    <path d="M33 5 L62 55 L4 55 Z" stroke="#f2d6aa" stroke-width="2"/>
-                    <path d="M22 23 L40 55 L4 55 Z" stroke="#f2d6aa" stroke-width="2"/>
-                    <path d="M44 23 L62 55 L26 55 Z" stroke="#f2d6aa" stroke-width="2"/>
+              <div class="envelope" onclick="breakSeal()">
+                <div class="env-body"></div>
+                <div class="env-flap"></div>
+                <div class="env-stamp" id="waxSeal">
+                  <svg viewBox="0 0 100 100" fill="currentColor" aria-hidden="true">
+                    <circle cx="52" cy="48" r="20"/>
+                    <polygon points="70,30 84,33 71,46"/>
+                    <polygon points="42,42 6,52 42,58"/>
+                    <path d="M52 66 Q54 84 70 90 Q57 78 62 64 Z"/>
+                    <circle cx="51" cy="44" r="2.4" fill="#0e0a05"/>
                   </svg>
-                  <!-- wax shards spawned by JS on break -->
                 </div>
               </div>
               <div class="eyebrow seal-eyebrow">A message has arrived</div>
               <div class="seal-tap">Secrets of the city await.</div>
-              <div class="seal-hint">Tap the seal to open</div>
+              <div class="seal-hint">Press the raven to enter</div>
             </div>
 
             <!-- SCROLL state -->
@@ -3472,8 +3467,7 @@
     try{ if(navigator.vibrate) navigator.vibrate([16,45,12]); }catch(e){}
     hapticTick(true);
     intro.classList.add('broken');
-    spawnShards();
-    setTimeout(typeIntroStory, 950); // begin after the scroll unfurls
+    setTimeout(typeIntroStory, 950); // begin after the flap opens + letter unfurls
   }
 
   function typeIntroStory(){
