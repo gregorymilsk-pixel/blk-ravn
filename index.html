@@ -674,8 +674,17 @@
   #intro .seal-hint{font-family:var(--ui);font-weight:300;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-faint);margin-top:18px}
 
   /* ---- black envelope + glowing gold raven seal ---- */
-  #intro .envelope{position:relative;width:238px;height:156px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-  #intro .env-svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 30px 58px rgba(0,0,0,.9))}
+  #intro .envelope{position:relative;width:236px;height:154px;cursor:pointer;perspective:800px;-webkit-tap-highlight-color:transparent}
+  #intro .env-body{position:absolute;inset:0;border-radius:7px;
+    background:linear-gradient(180deg,#0c0a07 0%,#050403 100%);
+    box-shadow:0 34px 70px -24px rgba(0,0,0,.95),0 0 0 1px rgba(196,164,107,.16),inset 0 0 40px rgba(0,0,0,.6)}
+  /* the closed flap — a downward triangle that opens on tap */
+  #intro .env-flap{position:absolute;top:0;left:0;right:0;height:88px;transform-origin:top center;
+    background:linear-gradient(180deg,#151009 0%,#0b0805 100%);
+    clip-path:polygon(0 0,100% 0,50% 100%);
+    box-shadow:0 1px 0 rgba(196,164,107,.14);
+    transition:transform .85s cubic-bezier(.3,.7,.2,1),opacity .6s ease;z-index:3}
+  #intro.broken .env-flap{transform:rotateX(-172deg);opacity:.5}
   /* wax seal */
   #intro .env-stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:78px;height:78px;border-radius:50%;z-index:6;color:#f3d9a6;
@@ -967,11 +976,8 @@
             <!-- SEALED state — a black envelope with a glowing gold raven seal -->
             <div class="seal-wrap" id="sealWrap">
               <div class="envelope" onclick="breakSeal()">
-                <svg class="env-svg" viewBox="0 0 238 156" fill="none" aria-hidden="true">
-                  <rect x="1.5" y="1.5" width="235" height="153" rx="8" fill="#070604" stroke="rgba(200,168,104,.4)" stroke-width="1.3"/>
-                  <path d="M5 9 L119 89 L233 9" stroke="rgba(200,168,104,.44)" stroke-width="1.3" stroke-linejoin="round"/>
-                  <path d="M5 147 L93 87 M233 147 L145 87" stroke="rgba(200,168,104,.22)" stroke-width="1"/>
-                </svg>
+                <div class="env-body"></div>
+                <div class="env-flap"></div>
                 <div class="env-stamp" id="waxSeal">
                   <svg viewBox="0 0 66 60" fill="none" aria-hidden="true">
                     <path d="M33 6 L61 54 L5 54 Z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
@@ -982,7 +988,7 @@
               </div>
               <div class="eyebrow seal-eyebrow">A message has arrived</div>
               <div class="seal-tap">Secrets of the city await.</div>
-              <div class="seal-hint">Press the mark to enter</div>
+              <div class="seal-hint">Press the wax seal to enter</div>
             </div>
 
             <!-- OPENED state — a black sheet with subtle gold letterhead -->
