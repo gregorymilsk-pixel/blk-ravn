@@ -3412,22 +3412,19 @@
   function hideArrival(){ const c=document.getElementById('arrivalCard'); if(c) c.classList.remove('show'); arrivalState.shownKey=null; }
   function dismissArrival(){ arrivalState.dismissedKey=arrivalState.shownKey; hideArrival(); }
 
-  /* TEST HELPER — shows the arrival card for the member's nearest venue,
-     so the flow can be previewed on any device without standing at a venue. */
+  /* TEST HELPER — instantly shows the arrival card so the flow can be
+     previewed on any device without GPS or standing at a venue. Uses the
+     last-known location if we have one, otherwise a representative venue. */
   function previewArrival(){
-    arrivalState.dismissedKey=null; arrivalState.shownKey=null;
-    const pick=(lat,lon)=>{
-      let best=VENUES[0], bd=Infinity;
-      VENUES.forEach(v=>{ const d=metersBetween(lat,lon,v.lat,v.lon); if(d<bd){ bd=d; best=v; } });
-      showArrivalSingle(best);
-    };
-    if('geolocation' in navigator){
-      navigator.geolocation.getCurrentPosition(
-        p=>pick(p.coords.latitude,p.coords.longitude),
-        ()=>pick(USER_LOCATION.lat, USER_LOCATION.lon),
-        {enableHighAccuracy:true,timeout:8000,maximumAge:0}
-      );
-    } else { pick(USER_LOCATION.lat, USER_LOCATION.lon); }
+    arrivalState.busy=false; arrivalState.dismissedKey=null; arrivalState.shownKey=null; arrivalState.venueName=null;
+    let v;
+    if(typeof USER_LOCATION.lat==='number' && USER_LOCATION.live){
+      let bd=Infinity; v=VENUES[0];
+      VENUES.forEach(x=>{ const d=metersBetween(USER_LOCATION.lat,USER_LOCATION.lon,x.lat,x.lon); if(d<bd){ bd=d; v=x; } });
+    } else {
+      v = VENUES.find(x=>x.name==='Born & Raised') || VENUES[0];
+    }
+    showArrivalSingle(v);
   }
 
   /* ---------- venue check-in ---------- */
