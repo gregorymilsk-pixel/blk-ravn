@@ -2763,10 +2763,13 @@
   function buildItinerary(){
     const meal = MEAL_PLANS[state.meal] ? state.meal : 'dinner';
     let plan = MEAL_PLANS[meal][state.pace] || MEAL_PLANS[meal][3] || MEAL_PLANS.dinner[3];
-    // Only include a coffee stop if the member actually opted into coffee — either picked
-    // Coffee in The Pour, or "Coffee shop" as a setting. Otherwise swap each coffee slot
-    // for a food stop so a coffee shop never leads (or appears in) an uninvited itinerary.
-    const wantsCoffee = state.drinks.has('coffee') || state.venueTypes.has('coffee');
+    // Include a coffee stop if the member opted into coffee (picked Coffee in The Pour or
+    // "Coffee shop" as a setting) — OR, when they gave us free rein on drinks + setting,
+    // if it's breakfast (a coffee opener is a tasteful default when we're fully curating).
+    // Otherwise swap each coffee slot for a food stop so coffee never appears uninvited.
+    const optedCoffee = state.drinks.has('coffee') || state.venueTypes.has('coffee');
+    const freeRein = state.drinks.size===0 && state.venueTypes.size===0;
+    const wantsCoffee = optedCoffee || (freeRein && meal==='breakfast');
     if(!wantsCoffee){
       plan = plan.map(s => s.role==='coffee'
         ? {role:'food', time:s.time, course:s.course
