@@ -2762,7 +2762,21 @@
 
   function buildItinerary(){
     const meal = MEAL_PLANS[state.meal] ? state.meal : 'dinner';
-    const plan = MEAL_PLANS[meal][state.pace] || MEAL_PLANS[meal][3] || MEAL_PLANS.dinner[3];
+    let plan = MEAL_PLANS[meal][state.pace] || MEAL_PLANS[meal][3] || MEAL_PLANS.dinner[3];
+    // Only include a coffee stop if the member actually opted into coffee — either picked
+    // Coffee in The Pour, or "Coffee shop" as a setting. Otherwise swap each coffee slot
+    // for a food stop so a coffee shop never leads (or appears in) an uninvited itinerary.
+    const wantsCoffee = state.drinks.has('coffee') || state.venueTypes.has('coffee');
+    if(!wantsCoffee){
+      plan = plan.map(s => s.role==='coffee'
+        ? {role:'food', time:s.time, course:s.course
+            .replace(/Coffee & Pastry|Pastry Stop/i,'Sweet Bite')
+            .replace(/Morning Coffee/i,'Morning Bite')
+            .replace(/Midday Coffee/i,'Midday Bite')
+            .replace(/Afternoon Coffee/i,'Afternoon Bite')
+            .replace(/Coffee|Pastry/i,'Bite')}
+        : s);
+    }
     const foodKeys=[...state.food], drinkKeys=[...state.drinks];
     const styleKeys=[...state.venueTypes]; // venue-style preferences (soft scoring boost)
     const hoursIdx=hoursIndexForToday();
