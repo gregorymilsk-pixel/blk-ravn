@@ -33,5 +33,14 @@ is already live in the app.
   - Show the saved card's **brand + last4** on the Profile / member-card screen.
   - Entry point in code: `handleSignUp()` in `index.html` (see the NOTE comment marking where tokenization goes).
 
+## Check-in / geofencing
+- **Shipped (foreground web):** Geofence arrival card — while the app is open, entering a venue's radius (~70m) surfaces a "You've arrived at X" card with one-tap check-in. Colocated venues (2+ in range) show a pick-one prompt. A single venue auto-checks-in after 60s of dwell. Limit: one check-in per venue per day. Manual check-in enforces the same daily limit. "Preview arrival check-in" test button on Profile.
+- **At launch — native background geofencing:**
+  - The web version only works **in the foreground** (browsers don't give location when the app is closed/backgrounded), so true "phone in pocket, app closed, auto-checked-in" needs the **native iOS/Android app** (CoreLocation region monitoring / Android Geofencing API).
+  - Register venue geofences natively; on region-enter, either check in server-side or fire a local notification prompting a one-tap check-in.
+  - Move the daily-limit + colocated logic server-side so it's authoritative across devices.
+  - Verify/lock down **venue coordinates** (see Data section) — geofence accuracy depends on them.
+  - Remove the Profile "Preview arrival check-in (test)" button before launch.
+
 ## Dev / infra
 - Merge the **Vite dev setup** (on the `chore/dev-setup` branch) so both machines share a proper local dev server + build.

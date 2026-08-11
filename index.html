@@ -759,6 +759,31 @@
   @media (prefers-reduced-motion: reduce){
     #intro .env-stamp,#intro .nib{animation:none}
   }
+
+  /* ---------- geofence arrival check-in card ---------- */
+  .arrival-card{
+    position:absolute;left:14px;right:14px;bottom:18px;z-index:200;
+    background:linear-gradient(180deg,#191209,#0c0805);
+    border:1px solid rgba(196,164,107,.28);border-radius:16px;
+    box-shadow:0 24px 54px -16px rgba(0,0,0,.92),0 0 44px -12px rgba(196,164,107,.22);
+    padding:18px 18px 16px;
+    transform:translateY(190%);opacity:0;pointer-events:none;
+    transition:transform .55s cubic-bezier(.2,.85,.2,1),opacity .4s ease;
+  }
+  .arrival-card.show{transform:translateY(0);opacity:1;pointer-events:auto}
+  .ac-close{position:absolute;top:9px;right:11px;background:none;border:0;color:var(--bone-faint);font-size:22px;line-height:1;cursor:pointer;padding:2px 7px}
+  .ac-close:hover{color:var(--brass)}
+  .ac-eyebrow{display:flex;align-items:center;gap:7px;font-family:var(--ui);font-weight:400;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--brass)}
+  .ac-eyebrow svg{flex:none}
+  .ac-venue{font-family:var(--display);font-weight:500;font-size:25px;color:var(--bone);margin-top:7px;line-height:1.08}
+  .ac-sub{font-family:var(--ui);font-weight:300;font-size:11.5px;color:var(--bone-dim);margin-top:6px;letter-spacing:.02em}
+  .ac-actions{margin-top:15px;display:flex;flex-direction:column;gap:9px}
+  .ac-btn{font-family:var(--ui);font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;border-radius:3px;padding:14px 16px;width:100%;transition:.2s;text-align:center}
+  .ac-btn.primary{background:linear-gradient(180deg,#d9bd85,#bd9a5d);color:#1a140c;border:1px solid transparent}
+  .ac-btn.primary:hover{background:linear-gradient(180deg,#e6cd9a,#c7a567)}
+  .ac-btn.opt{background:transparent;border:1px solid var(--line);color:var(--bone);display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-transform:none;letter-spacing:.01em;font-family:var(--display);font-weight:500;font-size:18px;padding:12px 15px}
+  .ac-btn.opt:hover{border-color:var(--brass);background:rgba(196,164,107,.06)}
+  .ac-opt-sub{font-family:var(--ui);font-weight:300;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--brass)}
 </style>
 </head>
 <body>
@@ -786,6 +811,16 @@
           <svg width="16" height="11" viewBox="0 0 16 11" fill="none"><path d="M8 3.5C10 3.5 11.8 4.3 13 5.6M8 .5C11 .5 13.7 1.7 15.5 3.6M8 6.5C8.9 6.5 9.7 6.9 10.3 7.5M8 9.7L8.01 9.7" stroke="#ECE4D4" stroke-width="1.1" stroke-linecap="round"/></svg>
           <svg width="22" height="11" viewBox="0 0 22 11" fill="none"><rect x=".5" y=".5" width="18" height="10" rx="2.5" stroke="#ECE4D4" opacity=".5"/><rect x="2" y="2" width="14" height="7" rx="1.3" fill="#ECE4D4"/><rect x="20" y="3.5" width="1.5" height="4" rx=".7" fill="#ECE4D4" opacity=".5"/></svg>
         </span>
+      </div>
+
+      <!-- ============ GEOFENCE ARRIVAL CARD (overlays all screens) ============ -->
+      <div class="arrival-card" id="arrivalCard" role="dialog" aria-live="polite">
+        <button class="ac-close" onclick="dismissArrival()" aria-label="Dismiss">&times;</button>
+        <div class="ac-eyebrow">
+          <svg width="11" height="13" viewBox="0 0 24 30" fill="none"><path d="M12 1c6 0 11 5 11 11 0 8-11 17-11 17S1 20 1 12C1 6 6 1 12 1Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/></svg>
+          <span id="acEyebrowText">You've arrived</span>
+        </div>
+        <div id="acBody"></div>
       </div>
 
       <!-- ============ THE DOOR — landing ============ -->
@@ -1434,6 +1469,8 @@
           </div>
 
           <button class="btn btn-ghost" style="margin-top:14px" onclick="startIntro()">Replay welcome message</button>
+
+          <button class="btn btn-ghost" style="margin-top:14px" onclick="previewArrival()">Preview arrival check-in <span style="color:var(--bone-faint)">(test)</span></button>
 
           <button class="text-link" style="margin:24px auto 0;display:block" onclick="handleSignOut()">Sign out</button>
         </div>
@@ -2164,6 +2201,7 @@
   }
 
   function handleSignOut(){
+    stopGeofenceMonitor();
     auth.signOut().then(()=>go('door'));
   }
 
@@ -2784,6 +2822,8 @@
     if(id==='flow-loc' || id==='explore' || id==='results') requestGeolocation();
     if(id==='flow-loc' || id==='results') startLiveTracking(); else stopLiveTracking();
     if(id==='flow-loc') renderLocMap();
+    // begin watching for venue arrivals once the member is inside the app
+    if(id==='home' && auth.currentUser) startGeofenceMonitor();
     document.querySelectorAll('#protoChips button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));
     syncNav(id);
   }
@@ -3206,6 +3246,190 @@
     );
   }
 
+  /* ===================================================================
+     GEOFENCE ARRIVAL CHECK-IN
+     While the app is open + foreground, watch the member's position and,
+     when they enter a venue's radius, surface a card to check in with one
+     tap. Colocated venues (2+ in range) require a pick. A single venue
+     auto-checks-in after a dwell. Limit: one check-in per venue per day.
+     NOTE (web): browsers only give location in the foreground — true
+     background/closed-app geofencing needs the native app (see ROADMAP).
+     =================================================================== */
+  const ARRIVAL_RADIUS_M = 70;            // how close counts as "arrived"
+  let AUTO_CHECKIN_DWELL_MS = 60 * 1000;  // auto check-in after this long in the geofence
+  let geofenceWatchId = null;
+  let arrivalState = { venueName:null, autoTimer:null, doneTimer:null, busy:false, shownKey:null, dismissedKey:null };
+
+  function localDayKey(ms){ const d=new Date(ms); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function checkedInTodayAt(venueName){
+    const today=localDayKey(Date.now());
+    return state.checkins.some(c=> c.venueName===venueName && localDayKey(checkinTimestampMs(c))===today);
+  }
+  function arrivalAllowedScreen(){
+    const s=document.querySelector('.screen.active');
+    return s && !['door','signin','join','reset','intro'].includes(s.id);
+  }
+
+  function startGeofenceMonitor(){
+    if(geofenceWatchId!==null || !('geolocation' in navigator)) return;
+    geofenceWatchId = navigator.geolocation.watchPosition(
+      onGeofenceTick,
+      ()=>{ /* ignore transient location errors — keep watching */ },
+      {enableHighAccuracy:true, maximumAge:15000, timeout:20000}
+    );
+  }
+  function stopGeofenceMonitor(){
+    if(geofenceWatchId!==null){ navigator.geolocation.clearWatch(geofenceWatchId); geofenceWatchId=null; }
+    resetArrival();
+  }
+
+  function onGeofenceTick(pos){
+    if(!auth.currentUser) return;
+    const lat=pos.coords.latitude, lon=pos.coords.longitude;
+    USER_LOCATION.lat=lat; USER_LOCATION.lon=lon; USER_LOCATION.live=true;
+
+    const inRange = VENUES.map(v=>({v, d: metersBetween(lat,lon,v.lat,v.lon)}))
+                          .filter(x=>x.d<=ARRIVAL_RADIUS_M).sort((a,b)=>a.d-b.d);
+
+    if(inRange.length===0){ resetArrival(); return; }
+    if(!arrivalAllowedScreen()) return;
+
+    const eligible = inRange.filter(x=>!checkedInTodayAt(x.v.name)).map(x=>x.v);
+
+    if(inRange.length>=2){
+      // colocated / ambiguous — member must pick; never auto check-in
+      clearTimeout(arrivalState.autoTimer); arrivalState.autoTimer=null;
+      arrivalState.venueName='__multi__';
+      if(eligible.length>=1) showArrivalMultiple(eligible); else hideArrival();
+      return;
+    }
+
+    const only=inRange[0].v;
+    if(checkedInTodayAt(only.name)){ resetArrival(); return; } // one per venue per day
+    if(arrivalState.venueName!==only.name){
+      // newly arrived at this single venue — arm the dwell auto check-in
+      arrivalState.venueName=only.name;
+      arrivalState.dismissedKey=null;
+      clearTimeout(arrivalState.autoTimer);
+      arrivalState.autoTimer=setTimeout(()=>autoCheckinAttempt(only), AUTO_CHECKIN_DWELL_MS);
+    }
+    showArrivalSingle(only);
+  }
+
+  function resetArrival(){
+    clearTimeout(arrivalState.autoTimer); arrivalState.autoTimer=null;
+    arrivalState.venueName=null; arrivalState.dismissedKey=null;
+    hideArrival();
+  }
+
+  /* after the dwell, verify the member is still there + still unambiguous, then check in */
+  function autoCheckinAttempt(v){
+    if(!('geolocation' in navigator) || !auth.currentUser) return;
+    navigator.geolocation.getCurrentPosition(p=>{
+      const d=metersBetween(p.coords.latitude,p.coords.longitude,v.lat,v.lon);
+      if(d>ARRIVAL_RADIUS_M) return;                 // they left
+      if(checkedInTodayAt(v.name)) return;           // already checked in
+      const others=VENUES.filter(o=>o.name!==v.name && metersBetween(p.coords.latitude,p.coords.longitude,o.lat,o.lon)<=ARRIVAL_RADIUS_M);
+      if(others.length>0) return;                    // became colocated — require a pick
+      doArrivalCheckin(v.name, v.type||'', true);
+    }, ()=>{}, {enableHighAccuracy:true,timeout:8000,maximumAge:0});
+  }
+
+  function setAcEyebrow(text){ const e=document.getElementById('acEyebrowText'); if(e) e.textContent=text; }
+  function acButton(label, onClick, cls){
+    const b=document.createElement('button'); b.className='ac-btn'+(cls?(' '+cls):'');
+    b.textContent=label; b.onclick=onClick; return b;
+  }
+
+  function showArrivalSingle(v){
+    if(arrivalState.busy) return;
+    const key='single:'+v.name;
+    if(key===arrivalState.dismissedKey) return;      // dismissed — card stays hidden (auto still runs)
+    const card=document.getElementById('arrivalCard'); if(!card) return;
+    if(arrivalState.shownKey===key && card.classList.contains('show')) return;
+    arrivalState.shownKey=key;
+    setAcEyebrow("You've arrived");
+    const body=document.getElementById('acBody'); body.innerHTML='';
+    const name=document.createElement('div'); name.className='ac-venue'; name.textContent=v.name;
+    const sub=document.createElement('div'); sub.className='ac-sub'; sub.textContent=(v.neighborhood?v.neighborhood+' · ':'')+'Tap to check in';
+    const actions=document.createElement('div'); actions.className='ac-actions';
+    actions.appendChild(acButton('Check in', ()=>doArrivalCheckin(v.name, v.type||'', false), 'primary'));
+    body.append(name, sub, actions);
+    card.classList.add('show');
+  }
+
+  function showArrivalMultiple(vs){
+    if(arrivalState.busy) return;
+    const key='multi:'+vs.map(v=>v.name).join('|');
+    if(key===arrivalState.dismissedKey) return;
+    const card=document.getElementById('arrivalCard'); if(!card) return;
+    if(arrivalState.shownKey===key && card.classList.contains('show')) return;
+    arrivalState.shownKey=key;
+    setAcEyebrow("You've arrived — which one?");
+    const body=document.getElementById('acBody'); body.innerHTML='';
+    const sub=document.createElement('div'); sub.className='ac-sub'; sub.textContent='Pick where you are to check in.';
+    body.appendChild(sub);
+    const actions=document.createElement('div'); actions.className='ac-actions';
+    vs.forEach(v=>{
+      const b=acButton(v.name, ()=>doArrivalCheckin(v.name, v.type||'', false), 'opt');
+      if(v.neighborhood || v.type){ const s=document.createElement('span'); s.className='ac-opt-sub'; s.textContent=v.neighborhood||v.type; b.appendChild(s); }
+      actions.appendChild(b);
+    });
+    body.appendChild(actions);
+    card.classList.add('show');
+  }
+
+  function doArrivalCheckin(name, type, auto){
+    if(arrivalState.busy) return;
+    if(checkedInTodayAt(name)){ hideArrival(); return; } // one per venue per day
+    arrivalState.busy=true;
+    clearTimeout(arrivalState.autoTimer); arrivalState.autoTimer=null;
+    Promise.resolve(recordCheckinDoc(name, type||'', 0)).then(result=>{
+      arrivalState.busy=false; arrivalState.shownKey=null;
+      showArrivalDone(name, result, auto);
+    });
+  }
+
+  function showArrivalDone(name, result, auto){
+    const card=document.getElementById('arrivalCard'); if(!card) return;
+    setAcEyebrow(auto ? 'Checked in automatically' : 'Checked in');
+    const body=document.getElementById('acBody'); body.innerHTML='';
+    const v=document.createElement('div'); v.className='ac-venue'; v.textContent=name;
+    const pts=document.createElement('div'); pts.className='ac-sub';
+    const p=(result && result.pointsAwarded) ? result.pointsAwarded : Math.round(POINTS_CONFIG.perCheckin*(state.currentTierMultiplier||1));
+    pts.textContent='✓  +'+p+' points earned';
+    body.append(v, pts);
+    if(result && result.advancedTo && TIER_CONFIG[result.advancedTo]){
+      const t=document.createElement('div'); t.className='ac-sub'; t.style.color='var(--brass-bright)'; t.style.marginTop='4px';
+      t.textContent='🎉 You reached '+TIER_CONFIG[result.advancedTo].label;
+      body.appendChild(t);
+    }
+    card.classList.add('show');
+    clearTimeout(arrivalState.doneTimer);
+    arrivalState.doneTimer=setTimeout(()=>{ hideArrival(); arrivalState.venueName=null; arrivalState.dismissedKey=null; }, 4800);
+  }
+
+  function hideArrival(){ const c=document.getElementById('arrivalCard'); if(c) c.classList.remove('show'); arrivalState.shownKey=null; }
+  function dismissArrival(){ arrivalState.dismissedKey=arrivalState.shownKey; hideArrival(); }
+
+  /* TEST HELPER — shows the arrival card for the member's nearest venue,
+     so the flow can be previewed on any device without standing at a venue. */
+  function previewArrival(){
+    arrivalState.dismissedKey=null; arrivalState.shownKey=null;
+    const pick=(lat,lon)=>{
+      let best=VENUES[0], bd=Infinity;
+      VENUES.forEach(v=>{ const d=metersBetween(lat,lon,v.lat,v.lon); if(d<bd){ bd=d; best=v; } });
+      showArrivalSingle(best);
+    };
+    if('geolocation' in navigator){
+      navigator.geolocation.getCurrentPosition(
+        p=>pick(p.coords.latitude,p.coords.longitude),
+        ()=>pick(USER_LOCATION.lat, USER_LOCATION.lon),
+        {enableHighAccuracy:true,timeout:8000,maximumAge:0}
+      );
+    } else { pick(USER_LOCATION.lat, USER_LOCATION.lon); }
+  }
+
   /* ---------- venue check-in ---------- */
   function openVenueCheckin(type, name){
     document.getElementById('venueType').textContent = type;
@@ -3228,6 +3452,14 @@
     const name = document.getElementById('venueName').textContent;
     const statusEl = document.getElementById('venueGeoStatus');
     const btn = document.getElementById('venueCheckinBtn');
+    // one check-in per venue per day
+    if(checkedInTodayAt(name)){
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--brass)';
+      statusEl.textContent = "You've already checked in here today.";
+      btn.disabled = true;
+      return;
+    }
     btn.disabled = true;
     btn.textContent = 'Locating…';
     statusEl.style.display = 'block';
