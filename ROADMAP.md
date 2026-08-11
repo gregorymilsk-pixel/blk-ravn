@@ -40,7 +40,6 @@ is already live in the app.
   - Register venue geofences natively; on region-enter, either check in server-side or fire a local notification prompting a one-tap check-in.
   - Move the daily-limit + colocated logic server-side so it's authoritative across devices.
   - Verify/lock down **venue coordinates** (see Data section) — geofence accuracy depends on them.
-  - Remove the Profile "Preview arrival check-in (test)" button before launch.
 
 ## Dev / infra
 - Merge the **Vite dev setup** (on the `chore/dev-setup` branch) so both machines share a proper local dev server + build.
