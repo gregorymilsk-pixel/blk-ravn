@@ -760,6 +760,10 @@
     #intro .env-stamp,#intro .nib{animation:none}
   }
 
+  /* elegant "let us decide" skip link, sits above Continue in the curate flow */
+  .skip-decide{align-self:center;background:none;border:0;cursor:pointer;font-family:var(--display);font-style:italic;font-weight:500;font-size:15px;color:var(--brass);letter-spacing:.01em;padding:6px 12px;transition:color .2s}
+  .skip-decide:hover{color:var(--brass-bright)}
+
   /* ---------- geofence arrival check-in card ---------- */
   .arrival-card{
     position:absolute;left:14px;right:14px;bottom:18px;z-index:200;
@@ -1123,9 +1127,9 @@
           <div class="body-s flow-sub" style="margin-top:10px">Pick the settings you're after — choose as many as you like, or skip and let us surprise you.</div>
           <div class="chip-grid" id="venueStyleChips"></div>
         </div>
-        <div class="flow-foot" style="display:flex;gap:12px">
-          <button class="btn btn-ghost" style="width:auto;flex:none;padding-left:26px;padding-right:26px" onclick="skipStep('flow-food','venueStyles')">Skip</button>
-          <button class="btn btn-fill" style="flex:1" onclick="go('flow-food')">Continue →</button>
+        <div class="flow-foot" style="display:flex;flex-direction:column;gap:10px">
+          <button class="skip-decide" onclick="skipStep('flow-food','venueStyles')">Not sure? Let us decide.</button>
+          <button class="btn btn-fill" onclick="go('flow-food')">Continue →</button>
         </div>
       </section>
 
@@ -1148,9 +1152,9 @@
           <div class="body-s" style="color:var(--bone-dim);margin:6px 0 14px">Choose as many as you like.</div>
           <div class="chip-grid" id="foodChips"></div>
         </div>
-        <div class="flow-foot" style="display:flex;gap:12px">
-          <button class="btn btn-ghost" style="width:auto;flex:none;padding-left:26px;padding-right:26px" onclick="skipStep('flow-drinks','food')">Skip</button>
-          <button class="btn btn-fill" style="flex:1" onclick="go('flow-drinks')">Continue →</button>
+        <div class="flow-foot" style="display:flex;flex-direction:column;gap:10px">
+          <button class="skip-decide" onclick="skipStep('flow-drinks','food')">Not sure? Let us decide.</button>
+          <button class="btn btn-fill" onclick="go('flow-drinks')">Continue →</button>
         </div>
       </section>
 
@@ -1167,9 +1171,9 @@
           <div class="body-s flow-sub" style="margin-top:10px">Your taste sets the bars we send you to — or skip, and we'll pour to the mood.</div>
           <div class="chip-grid" id="drinkChips"></div>
         </div>
-        <div class="flow-foot" style="display:flex;gap:12px">
-          <button class="btn btn-ghost" style="width:auto;flex:none;padding-left:26px;padding-right:26px" onclick="skipStep('flow-pace','drinks')">Skip</button>
-          <button class="btn btn-fill" style="flex:1" onclick="go('flow-pace')">Continue →</button>
+        <div class="flow-foot" style="display:flex;flex-direction:column;gap:10px">
+          <button class="skip-decide" onclick="skipStep('flow-pace','drinks')">Not sure? Let us decide.</button>
+          <button class="btn btn-fill" onclick="go('flow-pace')">Continue →</button>
         </div>
       </section>
 
@@ -2231,7 +2235,7 @@
   });
 
   /* ---------- state ---------- */
-  const state={ neighborhood:null, meal:'dinner', mealAuto:true, food:new Set(['american']), drinks:new Set(['old_fashioned']), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All', tiers:null, currentTier:'explorer', currentTierMultiplier:1 };
+  const state={ neighborhood:null, meal:'dinner', mealAuto:true, food:new Set(), drinks:new Set(), venueTypes:new Set(), pace:3, radius:1, savedVenues:[], checkins:[], points:0, eventSignups:[], memberNumber:'', isAdmin:false, exploreType:'All', exploreNeighborhood:'All', tiers:null, currentTier:'explorer', currentTierMultiplier:1 };
 
   /* ---------- venue directory (San Diego) ---------- */
   const VENUES=[
