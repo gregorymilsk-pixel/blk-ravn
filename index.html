@@ -2655,6 +2655,15 @@
     }
   }
 
+  /* a "pretty" spot with a view or vibe — rooftop, patio, garden, waterfront —
+     ideal for a relaxed drink after a full meal */
+  function isScenic(v){
+    const amb=v.ambiance||[];
+    if(amb.includes('rooftop')||amb.includes('patio')||amb.includes('instagrammable')||amb.includes('romantic')) return true;
+    const name=(v.name||'').toLowerCase();
+    return /roof|terrace|\bdeck\b|garden|sky ?lounge|beach club|beach house|waterfront|pier|cove|cliff|marine room|flamingo|grass skirt|cannonball|birdseye|altitude|nolen|seneca/.test(name);
+  }
+
   /* ---------- neighborhood grid (real data, real counts) ---------- */
   function renderNeighGrid(){
     const grid=document.getElementById('neighGrid');
@@ -2674,7 +2683,7 @@
   const COFFEE_VENUE_TYPES=['Coffee Shop'];
   const DESSERT_VENUE_TYPES=['Dessert','Juice Bar']; // sweet / smoothie / acai stops
 
-  function scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys, openCtx){
+  function scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys, openCtx, preferScenic){
     let score=0;
     const matched=[];
     foodKeys.forEach(k=>{
@@ -2686,12 +2695,14 @@
     if(styleKeys) styleKeys.forEach(sk=>{ if(venueMatchesStyle(v,sk)) score+=3; });
     // strongly prefer venues actually open at this stop's time
     if(openCtx && venueOpenAt(v, openCtx.mins, openCtx.hoursIdx)) score+=6;
+    // after coffee + a meal, favor a pretty spot with a view for the next drink
+    if(preferScenic && isScenic(v)) score+=6;
     return {score, matched};
   }
 
   /* picks the best-matching venue for a role ('food' or 'drink'), excluding names already used.
      refLat/refLon anchor the radius — the previous stop for chaining, or the member's location for the first stop. */
-  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius, allowedTypes, styleKeys, openCtx){
+  function pickVenueForRole(role, usedNames, foodKeys, drinkKeys, neighborhood, refLat, refLon, radius, allowedTypes, styleKeys, openCtx, preferScenic){
     const defaultTypes = role==='food' ? FOOD_VENUE_TYPES : role==='coffee' ? COFFEE_VENUE_TYPES : role==='dessert' ? DESSERT_VENUE_TYPES : DRINK_VENUE_TYPES;
     const types = (allowedTypes && allowedTypes.length) ? allowedTypes : defaultTypes;
     let candidates = VENUES.filter(v=>types.includes(v.type) && !usedNames.has(v.name));
@@ -2704,7 +2715,7 @@
 
     let best=null, bestScore=-1, bestMatched=[], bestDist=Infinity;
     pool.forEach(({v,dist})=>{
-      const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys, openCtx);
+      const {score,matched}=scoreVenue(v, foodKeys, drinkKeys, neighborhood, styleKeys, openCtx, preferScenic);
       if(score>bestScore || (score===bestScore && dist<bestDist)){
         best=v; bestScore=score; bestMatched=matched; bestDist=dist;
       }
@@ -2800,13 +2811,15 @@
     let clock=Math.max(nowMinutes(), MEAL_START[meal]||0);           // start now, unless the meal is still ahead
     const used=new Set();
     const stops=[];
+    let hadCoffee=false, hadFood=false;                               // once you've had coffee + a meal, favor a scenic drink
     let refLat=USER_LOCATION.lat, refLon=USER_LOCATION.lon;
     plan.forEach(slot=>{
       const openCtx={mins:clock, hoursIdx};
+      const preferScenic = hadCoffee && hadFood;                      // the post-meal drink/dessert stop wants a view
       let pick=null, usedRole=slot.role, fbPick=null, fbRole=slot.role;
       const tryRoles = slot.fallbackRoles || [slot.role];             // e.g. a de-duped coffee tries dessert -> drink -> food
       for(const r of tryRoles){
-        const p = pickVenueForRole(r, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, null, styleKeys, openCtx);
+        const p = pickVenueForRole(r, used, foodKeys, drinkKeys, state.neighborhood, refLat, refLon, state.radius, null, styleKeys, openCtx, preferScenic);
         if(p && p.venue){
           if(p.withinRadius){ pick=p; usedRole=r; break; }             // prefer a nearby option across fallbacks
           if(!fbPick){ fbPick=p; fbRole=r; }                           // otherwise remember the first available
@@ -2820,12 +2833,21 @@
       const travelMin=drive ? Math.max(3, Math.round((pick.dist/DRIVE_MPH)*60)) : walkMin;
       clock+=travelMin;                                               // arrival time at this stop
       const timeStr=minutesToClock(clock);
-      let why = pick.matched.length
-        ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
-        : (usedRole==='food' ? 'Hand-picked for your table.' : usedRole==='coffee' ? 'A local favorite for coffee and pastries.' : usedRole==='dessert' ? 'A sweet little detour.' : 'Hand-picked to open the outing.');
+      const scenicPick = preferScenic && isScenic(pick.venue);
+      let why;
+      if(scenicPick){
+        why = pick.matched.length
+          ? 'A pretty spot with a view — and your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+'.'
+          : 'A pretty spot with a view to unwind after your meal.';
+      } else {
+        why = pick.matched.length
+          ? 'Matches your '+pick.matched.map(k=>TAG_LABELS[k]||k).join(' & ')+' pick'+(pick.matched.length>1?'s':'')+'.'
+          : (usedRole==='food' ? 'Hand-picked for your table.' : usedRole==='coffee' ? 'A local favorite for coffee and pastries.' : usedRole==='dessert' ? 'A sweet little detour.' : 'Hand-picked to open the outing.');
+      }
       if(!pick.withinRadius) why += ' Closest match — just outside your '+state.radius+' mi radius.';
       stops.push({...slot, role:usedRole, time:timeStr, walkMin, travelMin, travelMode:drive?'drive':'walk', venue:pick.venue, why});
       clock+=DWELL[usedRole]||60;                                     // time spent here before the next leg
+      if(usedRole==='coffee') hadCoffee=true; else if(usedRole==='food') hadFood=true;
       refLat=pick.venue.lat; refLon=pick.venue.lon;
     });
     return stops;
