@@ -3345,12 +3345,23 @@
     resetArrival();
   }
 
+  /* the member's current curated stops — the only venues that trigger the arrival banner */
+  function itineraryVenueNames(){
+    return new Set((currentItinerary||[]).map(s=>s.venue&&s.venue.name).filter(Boolean));
+  }
+
   function onGeofenceTick(pos){
     if(!auth.currentUser) return;
     const lat=pos.coords.latitude, lon=pos.coords.longitude;
     USER_LOCATION.lat=lat; USER_LOCATION.lon=lon; USER_LOCATION.live=true;
 
-    const inRange = VENUES.map(v=>({v, d: metersBetween(lat,lon,v.lat,v.lon)}))
+    // Only venues on the member's curated itinerary pop the banner. Everything else is
+    // checked in manually from its listing (search -> venue -> Check in).
+    const curated = itineraryVenueNames();
+    if(curated.size===0){ resetArrival(); return; }
+
+    const inRange = VENUES.filter(v=>curated.has(v.name))
+                          .map(v=>({v, d: metersBetween(lat,lon,v.lat,v.lon)}))
                           .filter(x=>x.d<=ARRIVAL_RADIUS_M).sort((a,b)=>a.d-b.d);
 
     if(inRange.length===0){ resetArrival(); return; }
@@ -3391,8 +3402,9 @@
       const d=metersBetween(p.coords.latitude,p.coords.longitude,v.lat,v.lon);
       if(d>ARRIVAL_RADIUS_M) return;                 // they left
       if(checkedInTodayAt(v.name)) return;           // already checked in
-      const others=VENUES.filter(o=>o.name!==v.name && metersBetween(p.coords.latitude,p.coords.longitude,o.lat,o.lon)<=ARRIVAL_RADIUS_M);
-      if(others.length>0) return;                    // became colocated — require a pick
+      const curated=itineraryVenueNames();
+      const others=VENUES.filter(o=>o.name!==v.name && curated.has(o.name) && metersBetween(p.coords.latitude,p.coords.longitude,o.lat,o.lon)<=ARRIVAL_RADIUS_M);
+      if(others.length>0) return;                    // another curated stop is also in range — require a pick
       doArrivalCheckin(v.name, v.type||'', true);
     }, ()=>{}, {enableHighAccuracy:true,timeout:8000,maximumAge:0});
   }
